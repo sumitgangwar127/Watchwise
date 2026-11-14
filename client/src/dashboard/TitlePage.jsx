@@ -199,6 +199,11 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
     }
   }
 
+  const openTrailer = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTrailerFrom({ top: r.top, left: r.left, width: r.width, height: r.height });
+  };
+
   const facts = [
     ["Released", longDate(t.releaseDate)],
     t.seasons ? ["Seasons", `${t.seasons} · ${t.episodes} episodes`] : null,
@@ -216,9 +221,8 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
           className="absolute inset-0"
           style={{ background: `radial-gradient(ellipse at 75% 15%, ${palette[0]}80, transparent 60%), linear-gradient(120deg, ${palette[1]}, #08060a 85%)` }}
         />
-        {t.backdrop && <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-top" />}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-ink/90" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-ink/10 to-transparent" />
+        {t.backdrop && <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-top opacity-30" />}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/50 via-ink/75 to-ink" />
       </div>
       <Glow beam={false} />
       <Ambient colors={ambient} />
@@ -237,8 +241,8 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
 
       {/* Title, quick facts and actions */}
       <section className="relative">
-        <div className="relative mx-auto w-full max-w-5xl px-5 pb-4 pt-24 md:px-14 md:pt-28">
-          <div className="min-w-0 max-w-2xl">
+        <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-5 pb-4 pt-20 md:px-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-10 lg:px-14 lg:pt-24">
+          <div className="order-2 min-w-0 lg:order-1">
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.22em]">
               <span className="rounded border border-accent/60 px-2 py-0.5 text-accent">
                 {t.type === "movie" ? "Film" : "Series"}
@@ -283,10 +287,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
               )}
               {t.trailer && (
                 <button
-                  onClick={(e) => {
-                    const r = e.currentTarget.getBoundingClientRect();
-                    setTrailerFrom({ top: r.top, left: r.left, width: r.width, height: r.height });
-                  }}
+                  onClick={openTrailer}
                   className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-medium backdrop-blur transition hover:bg-white/20"
                 >
                   <Play size={16} className="fill-white" /> Play trailer
@@ -336,8 +337,31 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
               </p>
             )}
           </div>
-        </div>
 
+          <div className="order-1 lg:order-2">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-panel shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] ring-1 ring-white/15">
+              <div
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(ellipse at 70% 20%, ${palette[0]}a0, transparent 62%), linear-gradient(120deg, ${palette[1]}, #08060a 90%)` }}
+              />
+              {t.backdrop && (
+                <img src={t.backdrop} alt={`${t.title} banner`} className="absolute inset-0 size-full object-cover" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+              {t.trailer && (
+                <button
+                  onClick={openTrailer}
+                  aria-label="Play trailer"
+                  className="group absolute inset-0 grid place-items-center"
+                >
+                  <span className="grid size-16 place-items-center rounded-full bg-black/55 ring-1 ring-white/40 backdrop-blur transition group-hover:scale-105 group-hover:bg-black/70">
+                    <Play size={26} className="ml-1 fill-white" />
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Cinema trailer player: grows out of the "Play trailer" button and loads YouTube only when opened */}
@@ -356,7 +380,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
       </AnimatePresence>
 
       {/* Details */}
-      <div className="relative mx-auto grid max-w-5xl gap-6 px-5 py-6 md:grid-cols-[1fr_290px] md:gap-8 md:px-14">
+      <div className="relative mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[minmax(0,1fr)_320px] md:gap-8 md:px-10 lg:px-14">
         <div className="min-w-0 space-y-6">
           {!watched && (
             <section className="rounded-2xl border border-accent/30 bg-accent/[0.07] p-5 backdrop-blur-md md:p-6">
