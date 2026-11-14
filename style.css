@@ -133,7 +133,59 @@ footer{border-top:1px solid var(--edge);padding:44px 0 56px;color:var(--muted);f
 footer .wrap{display:grid;gap:16px}
 footer .row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 
-/* calm one-time reveal */
-.js .rv{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease}
-.js .rv.in{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.js .rv{opacity:1;transform:none;transition:none}}
+/* calm one-time motion: every effect plays once, then stays still.
+   Hidden start states exist only under .mo (JS on, reduced motion off). */
+:root{--ease:cubic-bezier(.22,.7,.2,1);--t1:.5s;--t2:.8s;--t3:1.2s}
+.mo .rv{opacity:0;transform:translateY(16px);transition:opacity var(--t2) var(--ease),transform var(--t2) var(--ease);transition-delay:calc(var(--i,0)*90ms)}
+.mo .rv.in{opacity:1;transform:none}
+
+/* hero */
+.hero h1 .w{display:inline-block}
+.mo .hero h1 .w{opacity:0;filter:blur(6px);transform:translateY(8px);transition:opacity var(--t1) var(--ease),filter var(--t1) var(--ease),transform var(--t1) var(--ease);transition-delay:calc(var(--i)*110ms + 120ms)}
+.mo .hero.go h1 .w{opacity:1;filter:none;transform:none}
+.mo .hero::before{opacity:0;transition:opacity var(--t3) var(--ease)}
+.mo .hero.go::before{opacity:1}
+.mo .hero .frame{opacity:0;transform:translateY(24px);transition:opacity .9s var(--ease),transform .9s var(--ease);transition-delay:.6s}
+.mo .hero.go .frame{opacity:1;transform:none}
+
+/* problem: three shelves merge into one taste profile */
+.shelf.taste{grid-column:1/-1;border-color:#5a4020;background:linear-gradient(120deg,rgba(242,196,109,.08),rgba(168,20,45,.1)),var(--panel)}
+.shelf.taste h3 .badge{margin-right:6px}
+.shelf.taste h3 .badge:last-of-type{margin-right:12px}
+.mo .shelves{position:relative}
+.mo .shelf.taste{position:absolute;left:50%;top:50%;width:min(100%,540px);margin:0;opacity:0;transform:translate(-50%,-50%) scale(.96);transition:opacity var(--t2) var(--ease) 1.3s,transform var(--t2) var(--ease) 1.3s}
+.mo .shelves .shelf:not(.taste){transition:transform 1.6s cubic-bezier(.65,0,.35,1) .5s,opacity var(--t2) ease 1.3s}
+.mo .shelves.in .shelf:not(.taste){opacity:0}
+.mo .shelves.in .shelf:nth-child(1){transform:translateX(calc(100% + 16px))}
+.mo .shelves.in .shelf:nth-child(3){transform:translateX(calc(-100% - 16px))}
+.mo .shelves.in .shelf.taste{opacity:1;transform:translate(-50%,-50%)}
+@media(max-width:760px){
+  .bars{display:none}
+  .mo .shelf.taste{width:100%}
+  .mo .shelves.in .shelf:nth-child(1){transform:translateY(calc(100% + 16px))}
+  .mo .shelves.in .shelf:nth-child(3){transform:translateY(calc(-100% - 16px))}
+}
+
+/* how it works: rail draws once, numbers follow */
+.steps{position:relative;padding-top:34px}
+.steps::before{content:"";position:absolute;top:11px;left:16.66%;right:16.66%;height:2px;border-radius:2px;background:var(--grad);transform-origin:left center}
+.steps li{position:relative}
+.steps li::after{content:"";position:absolute;top:-28px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--gold)}
+.steps li:nth-child(1){--i:0}.steps li:nth-child(2){--i:1}.steps li:nth-child(3){--i:2}
+.mo .steps::before{transform:scaleX(0);transition:transform var(--t3) var(--ease) .1s}
+.mo .steps.in::before{transform:none}
+.mo .steps li::before,.mo .steps li::after{opacity:0;transform:translateY(8px);transition:opacity var(--t1) var(--ease),transform var(--t1) var(--ease);transition-delay:calc(var(--i)*420ms + .3s)}
+.mo .steps li::after{transform:scale(.4)}
+.mo .steps.in li::before,.mo .steps.in li::after{opacity:1;transform:none}
+@media(max-width:760px){
+  .steps{padding-top:0;padding-left:30px}
+  .steps::before{top:30px;bottom:30px;left:10px;right:auto;width:2px;height:auto;transform-origin:center top}
+  .steps li::after{top:30px;left:-20px;margin-left:-5px}
+  .mo .steps::before{transform:scaleY(0)}
+}
+
+/* copy button: one-time check */
+.tick{display:none}
+.copy.done .tick{display:inline-block;stroke-dasharray:24;animation:draw .45s var(--ease) 1 both}
+@keyframes draw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.copy.done .tick{animation:none}}
