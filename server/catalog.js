@@ -38,7 +38,7 @@ const GENRE_TABLE = {
   history: ["Historical"],
 };
 const OUR_GENRES = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family", "Fantasy", "Horror", "Mystery", "Reality", "Romance", "Thriller", "War", "Western"];
-const mapGenre = (name) => {
+export const mapGenre = (name) => {
   const n = name.toLowerCase();
   if (n in GENRE_TABLE) return GENRE_TABLE[n];
   const hit = OUR_GENRES.find((g) => g.toLowerCase() === n);
@@ -46,7 +46,7 @@ const mapGenre = (name) => {
 };
 
 let genreCache = null;
-async function genreMaps() {
+export async function genreMaps() {
   if (genreCache) return genreCache;
   const maps = { id2names: { movie: {}, tv: {} }, name2ids: { movie: {}, tv: {} } };
   for (const type of ["movie", "tv"]) {
@@ -118,6 +118,111 @@ async function collect(region, providerIds, genres, maps) {
   return [...seen.values()];
 }
 
+/** Insert or update TMDB result rows in `titles`. Synchronous inside one transaction. */
+function upsertFound(found, maps, run) {
+  const find = db.prepare("SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?");
+  const insert = db.prepare(
+    `INSERT INTO titles (tmdb_id, media_type, title, year, overview, genres, poster_url, backdrop_url, rating, trend_score, release_date, language)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const update = db.prepare(
+    `UPDATE titles SET title = ?, year = ?, overview = ?, genres = ?, poster_url = ?, backdrop_url = ?, rating = ?,
+     trend_score = ?, release_date = ?, language = ?, last_seen = datetime('now') WHERE id = ?`,
+  );
+  const logChange = db.prepare("INSERT INTO change_log (run_id, title_id, action, detail) VALUES (?, ?, ?, ?)");
+
+  let added = 0;
+  let updated = 0;
+  const rows = [];
+
+  db.exec("BEGIN");
+  try {
+    for (const r of found) {
+      const type = r.media_type;
+      const title = r.title ?? r.name;
+      if (!title) continue;
+      const date = r.release_date || r.first_air_date || null;
+      const names = [...new Set((r.genre_ids ?? []).flatMap((id) => maps.id2names[type][id] ?? []))];
+      if (r.original_language === "ja" && names.includes("Animation")) names.push("Anime");
+
+      const values = [
+        title,
+        date ? Number(date.slice(0, 4)) : null,
+        r.overview || null,
+        JSON.stringify(names),
+        r.poster_path ? `${IMG}/w500${r.poster_path}` : null,
+        r.backdrop_path ? `${IMG}/w1280${r.backdrop_path}` : null,
+        r.vote_average ?? null,
+        r.popularity ?? 0,
+        date,
+        r.original_language ?? null,
+      ];
+      const existing = find.get(type, r.id);
+      let id;
+      if (existing) {
+        update.run(...values, existing.id);
+        id = existing.id;
+        updated++;
+      } else {
+        id = Number(insert.run(r.id, type, ...values).lastInsertRowid);
+        logChange.run(run, id, "added", title);
+        added++;
+      }
+      rows.push({ id, type, tmdbId: r.id });
+    }
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  return { rows, added, updated };
+}
+
+/** Fetch where each title streams in `region` and replace its availability rows. */
+async function syncAvailability(rows, region, run) {
+  const getAv = db.prepare("SELECT platform FROM availability WHERE title_id = ? AND region = ?");
+  const delAv = db.prepare("DELETE FROM availability WHERE title_id = ? AND region = ?");
+  const putAv = db.prepare(
+    "INSERT OR REPLACE INTO availability (title_id, region, platform, kind, link) VALUES (?, ?, ?, 'stream', ?)",
+  );
+  const logChange = db.prepare("INSERT INTO change_log (run_id, title_id, action, detail) VALUES (?, ?, ?, ?)");
+
+  const fetched = await pool(rows, 6, async (row) => {
+    try {
+      const res = await tmdb(`/${row.type}/${row.tmdbId}/watch/providers`);
+      const entry = res.results?.[region];
+      const ours = [...new Set((entry?.flatrate ?? []).map((p) => ourPlatform(p.provider_name)).filter(Boolean))];
+      return { row, ours, link: entry?.link ?? null };
+    } catch {
+      return null; // skip this title's availability, keep the rest
+    }
+  });
+
+  db.exec("BEGIN");
+  try {
+    for (const f of fetched) {
+      if (!f) continue;
+      const before = getAv.all(f.row.id, region).map((a) => a.platform);
+      delAv.run(f.row.id, region);
+      for (const p of f.ours) putAv.run(f.row.id, region, p, f.link);
+      for (const gone of before.filter((p) => !f.ours.includes(p))) {
+        logChange.run(run, f.row.id, "removed_from_platform", gone);
+      }
+    }
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+const startRun = (kind) =>
+  db.prepare("INSERT INTO runs (kind, provider, status) VALUES (?, 'tmdb', 'running')").run(kind).lastInsertRowid;
+const finishRun = (run, status, added = 0, updated = 0) =>
+  db
+    .prepare("UPDATE runs SET status = ?, added = ?, updated = ?, finished_at = datetime('now') WHERE id = ?")
+    .run(status, added, updated, run);
+
 let running = null;
 
 /**
@@ -137,114 +242,51 @@ async function doRefresh(kind) {
   const platforms = profile.platforms ?? [];
   const genres = profile.genres ?? [];
 
-  const run = db
-    .prepare("INSERT INTO runs (kind, provider, status) VALUES (?, 'tmdb', 'running')")
-    .run(kind).lastInsertRowid;
-
+  const run = startRun(kind);
   try {
     const maps = await genreMaps();
     const providerIds = await providerIdsFor(region, platforms);
     const found = await collect(region, providerIds, genres, maps);
-
-    const find = db.prepare("SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?");
-    const insert = db.prepare(
-      `INSERT INTO titles (tmdb_id, media_type, title, year, overview, genres, poster_url, backdrop_url, rating, trend_score, release_date, language)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    const update = db.prepare(
-      `UPDATE titles SET title = ?, year = ?, overview = ?, genres = ?, poster_url = ?, backdrop_url = ?, rating = ?,
-       trend_score = ?, release_date = ?, language = ?, last_seen = datetime('now') WHERE id = ?`,
-    );
-    const logChange = db.prepare("INSERT INTO change_log (run_id, title_id, action, detail) VALUES (?, ?, ?, ?)");
-
-    let added = 0;
-    let updated = 0;
-    const rows = [];
-
-    db.exec("BEGIN");
-    try {
-      for (const r of found) {
-        const type = r.media_type;
-        const title = r.title ?? r.name;
-        const date = r.release_date ?? r.first_air_date ?? null;
-        const names = [...new Set((r.genre_ids ?? []).flatMap((id) => maps.id2names[type][id] ?? []))];
-        if (r.original_language === "ja" && names.includes("Animation")) names.push("Anime");
-
-        const values = [
-          title,
-          date ? Number(date.slice(0, 4)) : null,
-          r.overview || null,
-          JSON.stringify(names),
-          r.poster_path ? `${IMG}/w500${r.poster_path}` : null,
-          r.backdrop_path ? `${IMG}/w1280${r.backdrop_path}` : null,
-          r.vote_average ?? null,
-          r.popularity ?? 0,
-          date,
-          r.original_language ?? null,
-        ];
-        const existing = find.get(type, r.id);
-        let id;
-        if (existing) {
-          update.run(...values, existing.id);
-          id = existing.id;
-          updated++;
-        } else {
-          id = Number(insert.run(r.id, type, ...values).lastInsertRowid);
-          logChange.run(run, id, "added", title);
-          added++;
-        }
-        rows.push({ id, type, tmdbId: r.id });
-      }
-      db.exec("COMMIT");
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
-    }
-
-    // Per-title availability in the user's region
-    const getAv = db.prepare("SELECT platform FROM availability WHERE title_id = ? AND region = ?");
-    const delAv = db.prepare("DELETE FROM availability WHERE title_id = ? AND region = ?");
-    const putAv = db.prepare(
-      "INSERT OR REPLACE INTO availability (title_id, region, platform, kind, link) VALUES (?, ?, ?, 'stream', ?)",
-    );
-    const fetched = await pool(rows, 6, async (row) => {
-      try {
-        const res = await tmdb(`/${row.type}/${row.tmdbId}/watch/providers`);
-        const entry = res.results?.[region];
-        const ours = [...new Set((entry?.flatrate ?? []).map((p) => ourPlatform(p.provider_name)).filter(Boolean))];
-        return { row, ours, link: entry?.link ?? null };
-      } catch {
-        return null; // skip this title's availability, keep the rest
-      }
-    });
-
-    db.exec("BEGIN");
-    try {
-      for (const f of fetched) {
-        if (!f) continue;
-        const before = getAv.all(f.row.id, region).map((a) => a.platform);
-        delAv.run(f.row.id, region);
-        for (const p of f.ours) putAv.run(f.row.id, region, p, f.link);
-        for (const gone of before.filter((p) => !f.ours.includes(p))) {
-          logChange.run(run, f.row.id, "removed_from_platform", gone);
-        }
-      }
-      db.exec("COMMIT");
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
-    }
-
-    db.prepare("UPDATE runs SET status = 'ok', added = ?, updated = ?, finished_at = datetime('now') WHERE id = ?").run(
-      added,
-      updated,
-      run,
-    );
+    const { rows, added, updated } = upsertFound(found, maps, run);
+    await syncAvailability(rows, region, run);
+    finishRun(run, "ok", added, updated);
     return { added, updated, total: found.length, region, providers: providerIds.length };
   } catch (e) {
-    db.prepare("UPDATE runs SET status = 'error', finished_at = datetime('now') WHERE id = ?").run(run);
+    finishRun(run, "error");
     throw e;
   }
+}
+
+/**
+ * Learning step: when the user marks a title as watched, pull TMDB's "similar to this"
+ * titles into the catalog so removed suggestions get replaced with fresh ones.
+ */
+export async function ingestRecommendations(type, tmdbId) {
+  const region = getProfile().country;
+  if (!region) return { added: 0 };
+  const run = startRun("learn");
+  try {
+    const maps = await genreMaps();
+    const res = await tmdb(`/${type}/${tmdbId}/recommendations`, { language: "en-US", page: 1 });
+    const found = (res.results ?? []).slice(0, 16).map((r) => ({ ...r, media_type: type }));
+    const { rows, added, updated } = upsertFound(found, maps, run);
+    await syncAvailability(rows, region, run);
+    finishRun(run, "ok", added, updated);
+    return { added };
+  } catch (e) {
+    finishRun(run, "error");
+    throw e;
+  }
+}
+
+/** Make sure a title exists in `titles` (fetching it from TMDB if needed). Returns its row id. */
+export async function ensureTitle(type, tmdbId) {
+  const existing = db.prepare("SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?").get(type, tmdbId);
+  if (existing) return existing.id;
+  const d = await tmdb(`/${type}/${tmdbId}`, { language: "en-US" });
+  const maps = await genreMaps();
+  const { rows } = upsertFound([{ ...d, media_type: type, genre_ids: (d.genres ?? []).map((g) => g.id) }], maps, null);
+  return rows[0].id;
 }
 
 /** Titles available in the region, shaped for the web app. */

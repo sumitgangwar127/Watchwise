@@ -4,7 +4,6 @@ import { Check, Loader2 } from "lucide-react";
 import { DEMO } from "./demo.js";
 import { Glow } from "./ui.jsx";
 import Poster from "./components/Poster.jsx";
-import Bulbs from "./components/Bulbs.jsx";
 
 // Scripted progress messages so the user can see the system working.
 // Only the profile save and AI check are real work today. The catalog-related
@@ -94,7 +93,6 @@ export default function Building({ country, provider, onDone }) {
         <h1 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           {finished ? "Almost showtime" : "Dimming the lights"}
         </h1>
-        <Bulbs count={12} className="mx-auto mt-4 w-40" />
 
         <ul className="mt-8 space-y-3">
           {messages.slice(0, shown).map((m, i) => {

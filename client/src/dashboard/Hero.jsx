@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, Info, Star } from "lucide-react";
+import { Check, ExternalLink, Info, Star } from "lucide-react";
 import { watchUrl } from "../data.js";
-import Bulbs from "../components/Bulbs.jsx";
 import Poster from "../components/Poster.jsx";
 import { watchOptions } from "./recommend.js";
 
 /** The "screen": a rotating featured title with ambient light and a marquee frame. */
-export default function Hero({ items, mine, onOpen }) {
+export default function Hero({ items, mine, onOpen, onWatched }) {
   const [i, setI] = useState(0);
 
   useEffect(() => {
+    if (items.length < 2) return;
     const id = setInterval(() => setI((n) => (n + 1) % items.length), 7500);
     return () => clearInterval(id);
   }, [items.length]);
 
-  const t = items[i];
+  if (!items.length) return null;
+  const t = items[i % items.length];
   const opts = watchOptions(t, mine);
   const primary = opts.mine[0] ?? opts.others[0];
 
@@ -89,14 +90,21 @@ export default function Hero({ items, mine, onOpen }) {
                 >
                   <Info size={16} /> More info
                 </button>
+                {onWatched && (
+                  <button
+                    onClick={() => onWatched(t)}
+                    className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-medium backdrop-blur transition hover:border-emerald-400/60 hover:bg-emerald-500/20"
+                  >
+                    <Check size={16} /> Watched already
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </motion.div>
       </AnimatePresence>
 
-      {/* Marquee frame and bottom fade into the page */}
-      <Bulbs count={36} className="absolute inset-x-5 top-[76px] hidden opacity-80 md:flex" />
+      {/* Bottom fade into the page */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
 
       <div className="absolute bottom-5 right-5 z-10 flex gap-2 md:bottom-8 md:right-14">
@@ -105,7 +113,7 @@ export default function Hero({ items, mine, onOpen }) {
             key={x.id}
             aria-label={`Show ${x.title}`}
             onClick={() => setI(n)}
-            className={`h-1.5 rounded-full transition-all ${n === i ? "w-8 bg-accent" : "w-3 bg-white/30"}`}
+            className={`h-1.5 rounded-full transition-all ${n === i % items.length ? "w-8 bg-accent" : "w-3 bg-white/30"}`}
           />
         ))}
       </div>

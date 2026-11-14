@@ -3,8 +3,13 @@ import { AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import Onboarding from "./Onboarding.jsx";
 import Dashboard from "./dashboard/Dashboard.jsx";
+import TitlePage from "./dashboard/TitlePage.jsx";
 import Intro from "./components/Intro.jsx";
 import { Glow } from "./ui.jsx";
+import { back, navigate, titlePath, usePath } from "./router.js";
+import { useCatalog } from "./useCatalog.js";
+import { useHistory } from "./useHistory.js";
+import { useSaved } from "./useSaved.js";
 
 const introSeen = () => {
   try {
@@ -20,6 +25,14 @@ export default function App() {
   const [error, setError] = useState(false);
   // The curtain-up intro plays once per browser session, and is skipped for reduced-motion users.
   const [intro, setIntro] = useState(() => !introSeen() && !reducedMotion());
+
+  const path = usePath();
+  const titleId = path.startsWith("/title/") ? decodeURIComponent(path.slice("/title/".length)) : null;
+
+  const onboarded = Boolean(status?.onboarded);
+  const catalogApi = useCatalog(onboarded);
+  const saved = useSaved();
+  const hist = useHistory(onboarded, { onLearned: catalogApi.reload });
 
   const finishIntro = useCallback(() => {
     try {
@@ -57,18 +70,47 @@ export default function App() {
         )}
       </div>
     );
-  } else if (status.onboarded) {
+  } else if (onboarded) {
     content = (
-      <Dashboard
-        status={status}
-        onRestart={() => {
-          setStatus(null);
+      <>
+        {/* The dashboard stays mounted (hidden) on a title page, so its tab, search and scroll survive going back */}
+        <div hidden={Boolean(titleId)}>
+          <Dashboard
+            status={status}
+            saved={saved}
+            hist={hist}
+            catalogApi={catalogApi}
+            onOpenTitle={(id) => navigate(titlePath(id))}
+            onRestart={() => {
+              setStatus(null);
+              navigate("/", { replace: true });
+              load();
+            }}
+          />
+        </div>
+        {titleId && (
+          <TitlePage
+            key={titleId}
+            id={titleId}
+            status={status}
+            saved={saved}
+            hist={hist}
+            navigate={navigate}
+            back={back}
+          />
+        )}
+      </>
+    );
+  } else {
+    content = (
+      <Onboarding
+        providers={status.providers}
+        onComplete={() => {
+          navigate("/", { replace: true });
           load();
         }}
       />
     );
-  } else {
-    content = <Onboarding providers={status.providers} onComplete={load} />;
   }
 
   return (

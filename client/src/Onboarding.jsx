@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, Check, Lock, Sparkles, UserX, Wallet } from "luc
 import { COUNTRIES, GENRES, flag, guessCountry, platformsFor } from "./data.js";
 import { Chip, GhostButton, Glow, Heading, PrimaryButton, Ticket, Words, fade } from "./ui.jsx";
 import Backdrop from "./components/Backdrop.jsx";
-import Bulbs from "./components/Bulbs.jsx";
 import Logo from "./components/Logo.jsx";
 import Building from "./Building.jsx";
 
@@ -165,7 +164,6 @@ export default function Onboarding({ providers, onComplete }) {
           ))}
         </ol>
         <div className="mt-auto">
-          <Bulbs count={10} className="mb-4 w-40 opacity-70" />
           <p className="text-xs leading-relaxed text-white/35">Everything you enter stays on this computer.</p>
         </div>
       </aside>
@@ -220,9 +218,6 @@ export default function Onboarding({ providers, onComplete }) {
                       One taste profile across every streaming app, powered by the AI you already have. Setup takes
                       about a minute.
                     </motion.p>
-                    <motion.div {...fade(6)} className="mt-8 max-w-xs">
-                      <Bulbs count={14} />
-                    </motion.div>
                     <ul className="mt-8 grid gap-3 sm:grid-cols-3">
                       {[
                         [Lock, "Private", "Your data never leaves your computer."],

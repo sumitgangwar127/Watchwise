@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { platformById } from "../data.js";
 import Poster from "../components/Poster.jsx";
 
@@ -12,7 +12,7 @@ export function Card({
   index = 0,
   className = "w-[132px] sm:w-[160px] md:w-[184px]",
 }) {
-  const badges = t.platforms
+  const badges = (t.platforms ?? [])
     .filter((p) => mine.includes(p))
     .slice(0, 2)
     .map(platformById)
@@ -48,8 +48,18 @@ export function Card({
             New genre
           </div>
         ) : (
-          <div className="absolute right-2 top-2 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300 opacity-0 backdrop-blur transition group-hover:opacity-100">
-            {t.match}%
+          t.match != null && (
+            <div className="absolute right-2 top-2 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300 opacity-0 backdrop-blur transition group-hover:opacity-100">
+              {t.match}%
+            </div>
+          )
+        )}
+        {t.watched && (
+          <div
+            title="Watched"
+            className="absolute bottom-2 right-2 grid size-6 place-items-center rounded-full bg-emerald-500 text-ink shadow"
+          >
+            <Check size={14} strokeWidth={3} />
           </div>
         )}
       </div>

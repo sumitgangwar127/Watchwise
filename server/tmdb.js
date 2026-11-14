@@ -80,13 +80,18 @@ export async function tmdb(path, params = {}, retries = 2) {
   else query.set("api_key", process.env.TMDB_API_KEY);
   const pathAndQuery = `/3${path}?${query}`;
 
-  let res;
-  try {
-    res = await viaHttp2(pathAndQuery, headers);
-  } catch {
-    session = null;
-    res = await viaFetch(pathAndQuery, headers);
+  // Try HTTP/2 twice (the second on a fresh connection, since an idle session can have been
+  // closed under us), then fall back to fetch.
+  let res = null;
+  for (let attempt = 0; attempt < 2 && !res; attempt++) {
+    try {
+      res = await viaHttp2(pathAndQuery, headers);
+    } catch {
+      session?.destroy();
+      session = null;
+    }
   }
+  res ??= await viaFetch(pathAndQuery, headers);
 
   if (res.status === 429 && retries > 0) {
     await sleep((Number(res.retryAfter) || 1) * 1000);

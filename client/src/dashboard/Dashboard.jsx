@@ -1,13 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bookmark, Compass, Home, Info, Loader2, RefreshCw, RotateCcw, Search, Sparkles } from "lucide-react";
+import {
+  Bookmark,
+  CheckCircle2,
+  Compass,
+  Home,
+  Info,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { COUNTRIES } from "../data.js";
-import { DEMO } from "../demo.js";
 import { Chip, Glow } from "../ui.jsx";
 import Logo from "../components/Logo.jsx";
 import Hero from "./Hero.jsx";
 import { Card, Row } from "./Row.jsx";
-import TitleModal from "./TitleModal.jsx";
+import { paletteFor } from "./palette.js";
 import { buildModel, experimentalReason } from "./recommend.js";
 
 const TABS = [
@@ -15,28 +25,8 @@ const TABS = [
   ["explore", "Explore", Compass],
   ["experimental", "Experimental", Sparkles],
   ["list", "My List", Bookmark],
+  ["watched", "Watched", CheckCircle2],
 ];
-
-function useSaved() {
-  const [ids, setIds] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("ww_list") ?? "[]");
-    } catch {
-      return [];
-    }
-  });
-  const toggle = (id) =>
-    setIds((cur) => {
-      const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
-      try {
-        localStorage.setItem("ww_list", JSON.stringify(next));
-      } catch {
-        /* storage unavailable: keep in memory only */
-      }
-      return next;
-    });
-  return [ids, toggle];
-}
 
 function Seats({ live }) {
   return (
@@ -69,31 +59,21 @@ function Grid({ children }) {
   );
 }
 
-export default function Dashboard({ status, onRestart }) {
+export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi }) {
   const { profile, providers } = status;
-  // The live catalog from TMDB when there is one, otherwise the bundled sample titles.
-  const [catalog, setCatalog] = useState(null); // { items, sample }
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshMsg, setRefreshMsg] = useState("");
+  const { catalog, refresh, refreshing, message: refreshMsg } = catalogApi;
 
-  const loadCatalog = useCallback(() => {
-    return fetch("/api/catalog")
-      .then((r) => r.json())
-      .then(({ items }) => setCatalog(items.length >= 8 ? { items, sample: false } : { items: DEMO, sample: true }))
-      .catch(() => setCatalog({ items: DEMO, sample: true }));
-  }, []);
-  useEffect(() => {
-    loadCatalog();
-  }, [loadCatalog]);
-
-  const model = useMemo(() => buildModel(profile, catalog?.items ?? []), [profile, catalog]);
+  // Suggestions rebuild whenever the catalog or the watch history changes
+  const model = useMemo(
+    () => buildModel(profile, catalog?.items ?? [], hist.items),
+    [profile, catalog, hist.items],
+  );
   const [tab, setTab] = useState("home");
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState(null);
-  const [open, setOpen] = useState(null);
   const [menu, setMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [saved, toggleSaved] = useSaved();
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 24);
@@ -102,15 +82,32 @@ export default function Dashboard({ status, onRestart }) {
     return () => window.removeEventListener("scroll", on);
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(""), 4500);
+    return () => clearTimeout(id);
+  }, [toast]);
+
   const country = COUNTRIES.find(([c]) => c === profile.country)?.[1] ?? profile.country;
   const provider = providers.find((p) => p.id === profile.provider)?.name ?? "No AI selected";
   const { mine, genres } = model;
+  const openTitle = (t) => onOpenTitle(t.id);
 
-  const explore = model.pool.filter(
+  const explore = model.explorePool.filter(
     (t) =>
       (!genre || t.genres.includes(genre)) && t.title.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const myList = model.pool.filter((t) => saved.includes(t.id));
+
+  // Saved and watched items render from their stored snapshots, enriched from the catalog when present
+  const fromCatalog = (s, extra = {}) => ({
+    ...(model.explorePool.find((p) => p.id === s.id) ?? {}),
+    ...s,
+    palette: paletteFor(s.id),
+    platforms: model.explorePool.find((p) => p.id === s.id)?.platforms ?? s.platforms ?? [],
+    ...extra,
+  });
+  const myList = saved.items.map((s) => fromCatalog(s));
+  const watchedList = hist.items.filter((h) => h.status === "watched").map((h) => fromCatalog(h, { watched: true }));
 
   const go = (id) => {
     setTab(id);
@@ -122,19 +119,17 @@ export default function Dashboard({ status, onRestart }) {
     onRestart();
   }
 
-  async function refresh() {
-    setRefreshing(true);
-    setRefreshMsg("");
+  async function markWatched(t) {
+    setToast(`Marked "${t.title}" as watched. Finding more like it…`);
     try {
-      const res = await fetch("/api/catalog/refresh", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Refresh failed");
-      await loadCatalog();
-      setRefreshMsg(`${data.added} new, ${data.updated} updated`);
+      const r = await hist.mark(t, "watched");
+      setToast(
+        r?.added > 0
+          ? `"${t.title}" is hidden from suggestions, and ${r.added} new titles like it were added.`
+          : `"${t.title}" is hidden from suggestions.`,
+      );
     } catch (e) {
-      setRefreshMsg(e.message);
-    } finally {
-      setRefreshing(false);
+      setToast(e.message);
     }
   }
 
@@ -182,7 +177,7 @@ export default function Dashboard({ status, onRestart }) {
                   ? "Real titles, posters and availability from TMDB for your country."
                   : "Placeholder titles. Add a TMDB key to .env to load the real catalog."
               }
-              className={`hidden items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] lg:flex ${
+              className={`hidden items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] xl:flex ${
                 live ? "border-emerald-400/40 text-emerald-300" : "border-dashed border-accent/40 text-accent"
               }`}
             >
@@ -198,7 +193,7 @@ export default function Dashboard({ status, onRestart }) {
                   if (tab !== "explore") setTab("explore");
                 }}
                 placeholder="Search titles"
-                className="w-52 rounded-full border border-edge bg-white/[0.04] py-2 pl-9 pr-4 text-sm outline-none transition focus:w-64 focus:border-accent"
+                className="w-44 rounded-full border border-edge bg-white/[0.04] py-2 pl-9 pr-4 text-sm outline-none transition focus:w-60 focus:border-accent"
               />
             </label>
             <div className="relative">
@@ -221,6 +216,8 @@ export default function Dashboard({ status, onRestart }) {
                     <div className="mb-3">{country}</div>
                     <div className="text-white/45">AI engine</div>
                     <div className="mb-3">{provider}</div>
+                    <div className="text-white/45">Watched</div>
+                    <div className="mb-3">{watchedList.length} titles shaping your picks</div>
                     {status.tmdb?.configured && (
                       <div className="mb-3">
                         <button
@@ -260,9 +257,9 @@ export default function Dashboard({ status, onRestart }) {
         >
           {tab === "home" && (
             <>
-              <Hero items={model.hero} mine={mine} onOpen={setOpen} />
+              <Hero items={model.hero} mine={mine} onOpen={openTitle} onWatched={markWatched} />
               <div className="relative -mt-10 space-y-2">
-                <Row kicker="Now showing" title="Picked for you" items={model.forYou} mine={mine} onOpen={setOpen} />
+                <Row kicker="Now showing" title="Picked for you" items={model.forYou} mine={mine} onOpen={openTitle} />
                 {model.genreRows.map((r) => (
                   <Row
                     key={r.genre}
@@ -270,17 +267,17 @@ export default function Dashboard({ status, onRestart }) {
                     title={r.genre}
                     items={r.items}
                     mine={mine}
-                    onOpen={setOpen}
+                    onOpen={openTitle}
                   />
                 ))}
-                <Row kicker="Coming attractions" title="New this week" items={model.coming} mine={mine} onOpen={setOpen} />
-                <Row kicker="Box office" title="Trending now" items={model.trending} mine={mine} onOpen={setOpen} />
+                <Row kicker="Coming attractions" title="New this week" items={model.coming} mine={mine} onOpen={openTitle} />
+                <Row kicker="Box office" title="Trending now" items={model.trending} mine={mine} onOpen={openTitle} />
                 <Row
                   kicker="The midnight reel"
                   title="Try something different"
                   items={model.experimental.slice(0, 12)}
                   mine={mine}
-                  onOpen={setOpen}
+                  onOpen={openTitle}
                   experimental
                 />
               </div>
@@ -316,7 +313,7 @@ export default function Dashboard({ status, onRestart }) {
                 {explore.length ? (
                   <Grid>
                     {explore.map((t, i) => (
-                      <Card key={t.id} t={t} index={i} mine={mine} onOpen={setOpen} className="w-full" />
+                      <Card key={t.id} t={t} index={i} mine={mine} onOpen={openTitle} className="w-full" />
                     ))}
                   </Grid>
                 ) : (
@@ -341,7 +338,7 @@ export default function Dashboard({ status, onRestart }) {
                 <Grid>
                   {model.experimental.map((t, i) => (
                     <div key={t.id}>
-                      <Card t={t} index={i} mine={mine} onOpen={setOpen} className="w-full" experimental />
+                      <Card t={t} index={i} mine={mine} onOpen={openTitle} className="w-full" experimental />
                       <p className="mt-2 text-xs leading-snug text-white/45">{experimentalReason(t, genres)}</p>
                     </div>
                   ))}
@@ -359,12 +356,45 @@ export default function Dashboard({ status, onRestart }) {
                 {myList.length ? (
                   <Grid>
                     {myList.map((t, i) => (
-                      <Card key={t.id} t={t} index={i} mine={mine} onOpen={setOpen} className="w-full" />
+                      <Card key={t.id} t={t} index={i} mine={mine} onOpen={openTitle} className="w-full" />
                     ))}
                   </Grid>
                 ) : (
                   <p className="px-5 text-white/45 md:px-14">
-                    Nothing saved yet. Open a title and choose "Add to My List".
+                    Nothing saved yet. Open a title and choose "My List".
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tab === "watched" && (
+            <div className="pb-32 pt-24 md:pt-28">
+              <div className="px-5 md:px-14">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-accent/80">Your history</div>
+                <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Watched</h1>
+                <p className="mt-3 max-w-xl text-white/55">
+                  Everything you've marked as watched. These never show up in suggestions, and they teach Watchwise
+                  what you like. Open one to rate it or undo.
+                </p>
+              </div>
+              <div className="mt-6">
+                {watchedList.length ? (
+                  <Grid>
+                    {watchedList.map((t, i) => (
+                      <div key={t.id}>
+                        <Card t={t} index={i} mine={mine} onOpen={openTitle} className="w-full" />
+                        {t.rating ? (
+                          <p className="mt-1.5 text-xs text-accent">{"★".repeat(Math.round(t.rating / 2))}</p>
+                        ) : (
+                          <p className="mt-1.5 text-xs text-white/35">Not rated</p>
+                        )}
+                      </div>
+                    ))}
+                  </Grid>
+                ) : (
+                  <p className="px-5 text-white/45 md:px-14">
+                    Nothing yet. Open a title and press "Watched already", or use the button on the home banner.
                   </p>
                 )}
               </div>
@@ -373,8 +403,23 @@ export default function Dashboard({ status, onRestart }) {
         </motion.main>
       </AnimatePresence>
 
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-x-4 bottom-20 z-40 mx-auto max-w-md rounded-2xl border border-edge bg-panel/95 px-4 py-3 text-center text-sm shadow-2xl backdrop-blur md:bottom-8"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-edge bg-ink/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-edge bg-ink/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
         {TABS.map(([id, label, Icon]) => (
           <button
             key={id}
@@ -388,20 +433,6 @@ export default function Dashboard({ status, onRestart }) {
           </button>
         ))}
       </nav>
-
-      <AnimatePresence>
-        {open && (
-          <TitleModal
-            key={open.id}
-            t={open}
-            mine={mine}
-            genres={genres}
-            saved={saved.includes(open.id)}
-            onSave={toggleSaved}
-            onClose={() => setOpen(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

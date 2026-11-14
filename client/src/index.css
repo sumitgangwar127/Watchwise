@@ -17,8 +17,6 @@
   --animate-kenburns: kenburns 22s ease-in-out infinite alternate;
   --animate-float: float 7s ease-in-out infinite;
   --animate-shimmer: shimmer 3s ease-in-out infinite;
-  --animate-flicker: flicker 2.4s ease-in-out infinite;
-  --animate-beam: beam 6s ease-in-out infinite;
   --animate-dust: dust 18s linear infinite;
 }
 
@@ -27,8 +25,6 @@
 @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
 @keyframes shimmer { 0% { transform: translateX(-130%); } 60%, 100% { transform: translateX(130%); } }
-@keyframes flicker { 0%, 100% { opacity: 1; } 45% { opacity: 0.55; } 55% { opacity: 0.95; } }
-@keyframes beam { 0%, 100% { opacity: 0.9; } 40% { opacity: 0.6; } 47% { opacity: 1; } 52% { opacity: 0.7; } }
 @keyframes dust {
   0% { transform: translateY(20vh) translateX(0); opacity: 0; }
   15% { opacity: 0.55; }
@@ -83,24 +79,44 @@ body::after {
     linear-gradient(180deg, #b3162f, #5a0a1b);
 }
 
-/* Marquee bulb */
-.bulb {
-  display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: #ffe2a0;
-  box-shadow: 0 0 8px 2px rgba(255, 196, 96, 0.75);
-  animation: var(--animate-flicker);
-}
-
 /* Projector light cone */
 .beam {
   clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
   background: linear-gradient(180deg, rgba(255, 238, 205, 0.24), rgba(255, 238, 205, 0.03) 65%, transparent);
   filter: blur(8px);
-  animation: var(--animate-beam);
 }
+
+/* Trailer player seek and volume sliders. --p is the filled percentage, set inline. */
+.scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--color-accent) var(--p, 0%), rgba(255, 255, 255, 0.25) var(--p, 0%));
+  outline: none;
+  cursor: pointer;
+}
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 196, 109, 0.5);
+  transition: transform 0.15s;
+}
+.scrubber:hover::-webkit-slider-thumb,
+.scrubber:focus-visible::-webkit-slider-thumb { transform: scale(1.3); }
+.scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 196, 109, 0.5);
+}
+.scrubber::-moz-range-track { background: transparent; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }

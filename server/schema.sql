@@ -82,6 +82,19 @@ CREATE TABLE IF NOT EXISTS change_log (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- One history entry per title (watched, dropped, not interested...)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_history_one_per_title ON history(title_id);
+
+-- Cached full detail pages from TMDB, so opening a title is instant after the first time
+CREATE TABLE IF NOT EXISTS title_details (
+  media_type TEXT NOT NULL,
+  tmdb_id    INTEGER NOT NULL,
+  region     TEXT NOT NULL,
+  json       TEXT NOT NULL,
+  fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (media_type, tmdb_id, region)
+);
+
 CREATE INDEX IF NOT EXISTS idx_titles_first_seen ON titles(first_seen);
 CREATE INDEX IF NOT EXISTS idx_history_title ON history(title_id);
 CREATE INDEX IF NOT EXISTS idx_availability_region ON availability(region, platform);

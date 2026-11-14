@@ -1,7 +1,9 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { listCatalog, refreshCatalog } from "./catalog.js";
+import { ingestRecommendations, listCatalog, refreshCatalog } from "./catalog.js";
 import { counts, db, getProfile, setProfile } from "./db.js";
+import { getDetails } from "./details.js";
+import { listHistory, parseTitleId, removeHistory, setHistory } from "./history.js";
 import { PROVIDERS, detectProviders, verifyProvider } from "./providers/index.js";
 import { tmdbConfigured } from "./tmdb.js";
 
@@ -84,6 +86,54 @@ app.post("/api/catalog/refresh", async (c) => {
     return c.json({ ok: true, ...(await refreshCatalog("manual")) });
   } catch (e) {
     return c.json({ error: e.message }, 502);
+  }
+});
+
+// Full detail page data for one title (cast, trailer, runtime, where to watch, similar).
+app.get("/api/title/:type/:id", async (c) => {
+  const parsed = parseTitleId(`${c.req.param("type")}-${c.req.param("id")}`);
+  if (!parsed) return c.json({ error: "Unknown title" }, 400);
+  if (!tmdbConfigured()) return c.json({ error: "TMDB is not configured. Add TMDB_ACCESS_TOKEN to .env" }, 400);
+  try {
+    return c.json(await getDetails(parsed.type, parsed.tmdbId, getProfile().country ?? "US"));
+  } catch (e) {
+    return c.json({ error: e.status === 404 ? "Title not found" : e.message }, e.status === 404 ? 404 : 502);
+  }
+});
+
+// Watch history (watched, dropped, not interested). Feeds the recommendations.
+app.get("/api/history", (c) => c.json({ items: listHistory() }));
+
+app.post("/api/history", async (c) => {
+  const b = await c.req.json().catch(() => null);
+  if (!b || typeof b.id !== "string" || typeof b.status !== "string") {
+    return c.json({ error: "id and status are required" }, 400);
+  }
+  const rating = b.rating === undefined || b.rating === null ? null : Number(b.rating);
+  try {
+    const { type, tmdbId } = await setHistory(b.id, b.status, rating);
+    // Learn from it: a watched title that wasn't disliked brings in similar new titles.
+    let added = 0;
+    if (b.status === "watched" && (rating === null || rating >= 6)) {
+      try {
+        added = (await ingestRecommendations(type, tmdbId)).added;
+      } catch {
+        /* the mark itself is saved; similar titles can be fetched next refresh */
+      }
+    }
+    return c.json({ ok: true, added });
+  } catch (e) {
+    const noKey = e.status === 0;
+    return c.json({ error: noKey ? "Add a TMDB key to .env to track watch history" : e.message }, noKey ? 400 : 400);
+  }
+});
+
+app.delete("/api/history/:id", (c) => {
+  try {
+    removeHistory(c.req.param("id"));
+    return c.json({ ok: true });
+  } catch (e) {
+    return c.json({ error: e.message }, 400);
   }
 });
 

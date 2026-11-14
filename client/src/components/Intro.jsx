@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Backdrop from "./Backdrop.jsx";
-import Bulbs from "./Bulbs.jsx";
 import Logo from "./Logo.jsx";
 
 const TITLE = "WATCHWISE".split("");
@@ -93,14 +92,6 @@ export default function Intro({ onDone }) {
             </motion.div>
 
             <div className="mx-auto w-full max-w-[560px]">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="mb-4 px-1"
-              >
-                <Bulbs count={18} />
-              </motion.div>
               <div className="flex justify-center text-[34px] font-black tracking-[0.2em] sm:text-6xl sm:tracking-[0.28em]">
                 {TITLE.map((l, i) => (
                   <motion.span
@@ -114,14 +105,6 @@ export default function Intro({ onDone }) {
                   </motion.span>
                 ))}
               </div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9 }}
-                className="mt-4 px-1"
-              >
-                <Bulbs count={18} />
-              </motion.div>
             </div>
 
             <motion.p
@@ -156,9 +139,7 @@ export default function Intro({ onDone }) {
           transition={{ duration: 0.3 }}
         >
           <div className="rounded-lg border border-accent/50 bg-black/55 px-6 py-4 text-center backdrop-blur-sm">
-            <Bulbs count={10} className="mb-3 w-44" />
             <div className="text-xs font-bold tracking-[0.45em] text-accent">NOW SHOWING</div>
-            <Bulbs count={10} className="mt-3 w-44" />
           </div>
         </motion.div>
       </div>
