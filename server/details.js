@@ -60,6 +60,13 @@ function shape(type, d, region) {
     seasons: d.number_of_seasons ?? null,
     episodes: d.number_of_episodes ?? null,
     status: d.status ?? null,
+    lastAirDate: d.last_air_date || null,
+    budget: d.budget || null,
+    revenue: d.revenue || null,
+    companies: (d.production_companies ?? []).map((c) => c.name).slice(0, 3),
+    countries: (d.production_countries ?? []).map((c) => c.name).slice(0, 2),
+    collection: d.belongs_to_collection?.name ?? null,
+    v: 2, // bump when the shape changes, so older cached entries are refetched
     certification: certification(type, d, region),
     rating: d.vote_average ?? null,
     votes: d.vote_count ?? 0,
@@ -110,7 +117,7 @@ export async function getDetails(type, tmdbId, region) {
     .get(type, tmdbId, region);
   if (row && Date.now() - Date.parse(`${row.fetched_at.replace(" ", "T")}Z`) < TTL_MS) {
     const cached = JSON.parse(row.json);
-    if (cached.stills !== undefined) return cached; // entries cached before stills existed are refetched
+    if (cached.v === 2) return cached; // entries cached before this shape existed are refetched
   }
 
   const append =

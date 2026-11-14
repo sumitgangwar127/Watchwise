@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { ingestRecommendations, listCatalog, refreshCatalog } from "./catalog.js";
 import { counts, db, getProfile, setProfile } from "./db.js";
 import { getDetails } from "./details.js";
+import { buildIntermission } from "./intermission.js";
 import { listHistory, parseTitleId, removeHistory, setHistory } from "./history.js";
 import { PROVIDERS, detectProviders, verifyProvider } from "./providers/index.js";
 import { tmdbConfigured } from "./tmdb.js";
@@ -98,6 +99,16 @@ app.get("/api/title/:type/:id", async (c) => {
     return c.json(await getDetails(parsed.type, parsed.tmdbId, getProfile().country ?? "US"));
   } catch (e) {
     return c.json({ error: e.status === 404 ? "Title not found" : e.message }, e.status === 404 ? 404 : 502);
+  }
+});
+
+// Stories, facts and moments for the Intermission (screen saver), from verified TMDB data only.
+app.get("/api/intermission", async (c) => {
+  if (!tmdbConfigured()) return c.json({ slides: [] });
+  try {
+    return c.json({ slides: await buildIntermission(getProfile().country ?? "US") });
+  } catch {
+    return c.json({ slides: [] });
   }
 });
 
