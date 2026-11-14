@@ -6,6 +6,8 @@
 
 **One taste profile across every streaming platform. Private, local and free.**
 
+**Website: https://sumitgangwar127.github.io/Watchwise/**
+
 Every streaming app recommends only from its own catalog, using only what you did on that app. Watchwise keeps a single taste profile on your own computer and shows you what to watch next across all the platforms you actually have, in your country.
 
 > **Status: early stage.** The app, the real TMDB catalog, the title pages, the home-theater trailer player, watch-history learning and the scheduled updates all work today. The AI suggestion engine (your own Claude Code, Codex, Cursor or Gemini) is **not built yet**, so recommendations come from a simple taste score based on your genres, history and usage. See [What works today](#what-works-today) and the [roadmap](ROADMAP.md).
