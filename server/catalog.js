@@ -1,4 +1,5 @@
 import { db, getProfile } from "./db.js";
+import { computeTaste, topGenres } from "./taste.js";
 import { IMG, tmdb } from "./tmdb.js";
 
 // TMDB provider names → Watchwise platform ids (matched by name, so no hardcoded provider ids).
@@ -27,6 +28,13 @@ const NAME_MAP = [
   ["unext", /u-?next/i],
 ];
 export const ourPlatform = (name) => NAME_MAP.find(([, re]) => re.test(name))?.[0] ?? null;
+
+export const PLATFORM_NAMES = {
+  netflix: "Netflix", prime: "Prime Video", disney: "Disney+", apple: "Apple TV+", hotstar: "JioHotstar",
+  jiocinema: "JioCinema", max: "Max", hulu: "Hulu", peacock: "Peacock", paramount: "Paramount+",
+  sonyliv: "SonyLIV", zee5: "ZEE5", youtube: "YouTube", mubi: "MUBI", crunchyroll: "Crunchyroll",
+  bbc: "BBC iPlayer", itvx: "ITVX", crave: "Crave", stan: "Stan", viki: "Viki", tving: "TVING", unext: "U-NEXT",
+};
 
 const GENRE_TABLE = {
   "science fiction": ["Sci-Fi"],
@@ -74,7 +82,7 @@ async function pool(items, size, fn) {
   return out;
 }
 
-async function providerIdsFor(region, ourIds) {
+export async function providerIdsFor(region, ourIds) {
   const ids = new Set();
   for (const type of ["movie", "tv"]) {
     const { results } = await tmdb(`/watch/providers/${type}`, { watch_region: region, language: "en-US" });
@@ -119,7 +127,7 @@ async function collect(region, providerIds, genres, maps) {
 }
 
 /** Insert or update TMDB result rows in `titles`. Synchronous inside one transaction. */
-function upsertFound(found, maps, run) {
+export function upsertFound(found, maps, run) {
   const find = db.prepare("SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?");
   const insert = db.prepare(
     `INSERT INTO titles (tmdb_id, media_type, title, year, overview, genres, poster_url, backdrop_url, rating, trend_score, release_date, language)
@@ -179,7 +187,8 @@ function upsertFound(found, maps, run) {
 }
 
 /** Fetch where each title streams in `region` and replace its availability rows. */
-async function syncAvailability(rows, region, run) {
+/** Returns what changed: platforms a title gained (`arrived`) or lost (`removed`) since it was last checked. */
+export async function syncAvailability(rows, region, run) {
   const getAv = db.prepare("SELECT platform FROM availability WHERE title_id = ? AND region = ?");
   const delAv = db.prepare("DELETE FROM availability WHERE title_id = ? AND region = ?");
   const putAv = db.prepare(
@@ -198,27 +207,40 @@ async function syncAvailability(rows, region, run) {
     }
   });
 
+  const wasChecked = db.prepare("SELECT avail_checked_at FROM titles WHERE id = ?");
+  const markChecked = db.prepare("UPDATE titles SET avail_checked_at = datetime('now') WHERE id = ?");
+  const arrived = [];
+  const removed = [];
+
   db.exec("BEGIN");
   try {
     for (const f of fetched) {
       if (!f) continue;
       const before = getAv.all(f.row.id, region).map((a) => a.platform);
+      const checkedBefore = Boolean(wasChecked.get(f.row.id)?.avail_checked_at);
       delAv.run(f.row.id, region);
       for (const p of f.ours) putAv.run(f.row.id, region, p, f.link);
       for (const gone of before.filter((p) => !f.ours.includes(p))) {
         logChange.run(run, f.row.id, "removed_from_platform", gone);
+        removed.push({ titleId: f.row.id, platform: gone });
       }
+      // Only count an arrival if we'd looked at this title before; a first look isn't news
+      if (checkedBefore) {
+        for (const p of f.ours.filter((p) => !before.includes(p))) arrived.push({ titleId: f.row.id, platform: p });
+      }
+      markChecked.run(f.row.id);
     }
     db.exec("COMMIT");
   } catch (e) {
     db.exec("ROLLBACK");
     throw e;
   }
+  return { arrived, removed };
 }
 
-const startRun = (kind) =>
+export const startRun = (kind) =>
   db.prepare("INSERT INTO runs (kind, provider, status) VALUES (?, 'tmdb', 'running')").run(kind).lastInsertRowid;
-const finishRun = (run, status, added = 0, updated = 0) =>
+export const finishRun = (run, status, added = 0, updated = 0) =>
   db
     .prepare("UPDATE runs SET status = ?, added = ?, updated = ?, finished_at = datetime('now') WHERE id = ?")
     .run(status, added, updated, run);
@@ -240,7 +262,8 @@ async function doRefresh(kind) {
   const region = profile.country;
   if (!region) throw new Error("Complete onboarding first");
   const platforms = profile.platforms ?? [];
-  const genres = profile.genres ?? [];
+  const learned = topGenres(computeTaste(), 3);
+  const genres = learned.length ? learned : (profile.genres ?? []);
 
   const run = startRun(kind);
   try {
@@ -273,6 +296,65 @@ export async function ingestRecommendations(type, tmdbId) {
     await syncAvailability(rows, region, run);
     finishRun(run, "ok", added, updated);
     return { added };
+  } catch (e) {
+    finishRun(run, "error");
+    throw e;
+  }
+}
+
+/**
+ * What's trending right now and what was released in the last 14 days, limited to titles
+ * available on the user's platforms in their country. Incremental, like the other refreshes.
+ */
+export async function discoverTrendAndNew(kind = "scheduled") {
+  const profile = getProfile();
+  const region = profile.country;
+  if (!region) throw new Error("Complete onboarding first");
+
+  const run = startRun(kind);
+  try {
+    const maps = await genreMaps();
+    const providerIds = await providerIdsFor(region, profile.platforms ?? []);
+    const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+    const base = {
+      watch_region: region,
+      with_watch_monetization_types: "flatrate",
+      sort_by: "popularity.desc",
+      include_adult: false,
+      language: "en-US",
+    };
+    if (providerIds.length) base.with_watch_providers = providerIds.join("|");
+
+    const jobs = [];
+    for (const type of ["movie", "tv"]) {
+      for (const page of [1, 2]) {
+        jobs.push([type, "trending", `/trending/${type}/week`, { language: "en-US", page }]);
+        jobs.push([
+          type,
+          "fresh",
+          `/discover/${type}`,
+          { ...base, page, [type === "movie" ? "primary_release_date.gte" : "first_air_date.gte"]: since, "vote_count.gte": 5 },
+        ]);
+      }
+    }
+    const batches = await pool(jobs, 4, async ([type, source, path, params]) =>
+      (await tmdb(path, params)).results.map((r) => ({ ...r, media_type: type, __source: source })),
+    );
+
+    const seen = new Map();
+    let trending = 0;
+    let fresh = 0;
+    for (const r of batches.flat()) {
+      const key = `${r.media_type}:${r.id}`;
+      if (seen.has(key)) continue;
+      seen.set(key, r);
+      if (r.__source === "trending") trending++;
+      else fresh++;
+    }
+    const { rows, added, updated } = upsertFound([...seen.values()], maps, run);
+    await syncAvailability(rows, region, run);
+    finishRun(run, "ok", added, updated);
+    return { added, updated, trending, fresh };
   } catch (e) {
     finishRun(run, "error");
     throw e;

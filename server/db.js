@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const dataDir = join(root, "data");
+export const dataDir = join(root, "data");
 mkdirSync(dataDir, { recursive: true });
 
 export const db = new DatabaseSync(join(dataDir, "watchwise.db"));
@@ -21,6 +21,7 @@ ensureColumn("titles", "backdrop_url", "TEXT");
 ensureColumn("titles", "release_date", "TEXT");
 ensureColumn("titles", "language", "TEXT");
 ensureColumn("availability", "link", "TEXT");
+ensureColumn("titles", "avail_checked_at", "TEXT");
 
 export function getProfile() {
   const rows = db.prepare("SELECT key, value FROM profile").all();

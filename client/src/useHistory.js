@@ -6,12 +6,15 @@ import { useCallback, useEffect, useState } from "react";
  */
 export function useHistory(enabled, { onLearned } = {}) {
   const [items, setItems] = useState([]);
+  const [taste, setTaste] = useState(null);
 
   const reload = useCallback(
     () =>
-      fetch("/api/history")
-        .then((r) => r.json())
-        .then((d) => setItems(d.items ?? []))
+      Promise.all([fetch("/api/history").then((r) => r.json()), fetch("/api/taste").then((r) => r.json())])
+        .then(([h, t]) => {
+          setItems(h.items ?? []);
+          setTaste(t.weights ?? null);
+        })
         .catch(() => {}),
     [],
   );
@@ -68,5 +71,5 @@ export function useHistory(enabled, { onLearned } = {}) {
     [reload],
   );
 
-  return { items, get, mark, unmark, reload };
+  return { items, taste, get, mark, unmark, reload };
 }

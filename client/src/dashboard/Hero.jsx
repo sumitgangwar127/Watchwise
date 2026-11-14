@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ExternalLink, Info, Star } from "lucide-react";
 import { watchUrl } from "../data.js";
+import { track } from "../track.js";
 import Letterbox from "../components/Letterbox.jsx";
 import Poster from "../components/Poster.jsx";
 import { watchOptions } from "./recommend.js";
@@ -69,6 +70,7 @@ export default function Hero({ items, mine, onOpen, onWatched, onSlide }) {
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <a
                   href={watchUrl(primary, t.title)}
+                  onClick={() => track("watch_click", t.id, primary.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"

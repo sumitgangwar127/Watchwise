@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { track } from "../track.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -33,7 +34,7 @@ const YouTubeMark = () => (
  * from movie stills, and blended as the playhead moves. It is not per-pixel live, because the
  * player's pixels can't be read from the page.
  */
-export default function TheaterPlayer({ trailer, title, backdrop, stills = [], from, cta, onClose }) {
+export default function TheaterPlayer({ trailer, title, titleId, backdrop, stills = [], from, cta, onClose }) {
   const reduce = useReducedMotion();
   const roomRef = useRef(null);
   const yt = useYouTubePlayer({ videoKey: trailer.key, title });
@@ -123,6 +124,14 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
     yt.seek(scrub);
     setScrub(null);
   };
+
+  // Usage signals for the taste profile (stored locally): a play, and watching it to the end
+  useEffect(() => {
+    if (started && titleId) track("trailer_play", titleId);
+  }, [started, titleId]);
+  useEffect(() => {
+    if (ended && titleId) track("trailer_complete", titleId);
+  }, [ended, titleId]);
 
   const spring = reduce ? { duration: 0.01 } : { type: "spring", stiffness: 170, damping: 24, mass: 0.9 };
   const fromBox = { top: from.top, left: from.left, width: from.width, height: from.height };
@@ -271,6 +280,7 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
                     {cta && (
                       <a
                         href={cta.href}
+                onClick={() => cta.onClick?.()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
@@ -382,7 +392,10 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
               href={cta.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={yt.pause}
+              onClick={() => {
+              yt.pause();
+              cta.onClick?.();
+            }}
               className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
               style={{ background: cta.color }}
             >

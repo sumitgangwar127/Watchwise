@@ -3,7 +3,11 @@ import { Hono } from "hono";
 import { ingestRecommendations, listCatalog, refreshCatalog } from "./catalog.js";
 import { counts, db, getProfile, setProfile } from "./db.js";
 import { getDetails } from "./details.js";
+import { listAlerts, markRead, unreadCount } from "./alerts.js";
 import { buildIntermission } from "./intermission.js";
+import { listJobs, runJob, setJobEnabled, startScheduler } from "./jobs.js";
+import { latestTaste, saveTaste } from "./taste.js";
+import { clearEvents, eventCount, recordEvent } from "./usage.js";
 import { listHistory, parseTitleId, removeHistory, setHistory } from "./history.js";
 import { PROVIDERS, detectProviders, verifyProvider } from "./providers/index.js";
 import { tmdbConfigured } from "./tmdb.js";
@@ -123,6 +127,7 @@ app.post("/api/history", async (c) => {
   const rating = b.rating === undefined || b.rating === null ? null : Number(b.rating);
   try {
     const { type, tmdbId } = await setHistory(b.id, b.status, rating);
+    saveTaste(); // your taste updates the moment you mark something
     // Learn from it: a watched title that wasn't disliked brings in similar new titles.
     let added = 0;
     if (b.status === "watched" && (rating === null || rating >= 6)) {
@@ -141,12 +146,61 @@ app.post("/api/history", async (c) => {
 
 app.delete("/api/history/:id", (c) => {
   try {
-    removeHistory(c.req.param("id"));
+    // ?only=watchlist lets "remove from My List" never erase a watched entry
+    const only = c.req.query("only");
+    removeHistory(c.req.param("id"), only === "watchlist" ? "watchlist" : null);
+    saveTaste();
     return c.json({ ok: true });
   } catch (e) {
     return c.json({ error: e.message }, 400);
   }
 });
+
+// ---- Scheduled jobs, alerts, usage and taste ----
+app.get("/api/jobs", (c) => c.json({ jobs: listJobs() }));
+
+app.patch("/api/jobs/:id", async (c) => {
+  const b = await c.req.json().catch(() => null);
+  try {
+    setJobEnabled(c.req.param("id"), Boolean(b?.enabled));
+    return c.json({ ok: true, jobs: listJobs() });
+  } catch (e) {
+    return c.json({ error: e.message }, 404);
+  }
+});
+
+app.post("/api/jobs/:id/run", async (c) => {
+  try {
+    return c.json({ ...(await runJob(c.req.param("id"), "manual")), jobs: listJobs() });
+  } catch (e) {
+    return c.json({ error: e.message }, e.message.includes("running") ? 409 : 404);
+  }
+});
+
+app.get("/api/alerts", (c) => c.json({ alerts: listAlerts(), unread: unreadCount() }));
+app.post("/api/alerts/read", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  markRead(Number.isInteger(b?.id) ? b.id : null);
+  return c.json({ ok: true, unread: unreadCount() });
+});
+
+app.post("/api/events", async (c) => {
+  const b = await c.req.json().catch(() => null);
+  try {
+    recordEvent(b?.kind, b?.ref, b?.platform ?? null);
+    return c.json({ ok: true });
+  } catch (e) {
+    return c.json({ error: e.message }, 400);
+  }
+});
+app.get("/api/events", (c) => c.json({ count: eventCount() }));
+app.delete("/api/events", (c) => {
+  clearEvents();
+  saveTaste();
+  return c.json({ ok: true });
+});
+
+app.get("/api/taste", (c) => c.json(latestTaste()));
 
 // Lets you redo onboarding. Clears the profile only; history and catalog are kept.
 app.post("/api/reset", (c) => {
@@ -157,4 +211,5 @@ app.post("/api/reset", (c) => {
 // The API stays on localhost only. Phones reach it through the web app's proxy.
 serve({ fetch: app.fetch, port: PORT, hostname: "127.0.0.1" }, () => {
   console.log(`Watchwise API listening on http://localhost:${PORT}`);
+  startScheduler(); // runs due jobs shortly after start, then every minute (set WATCHWISE_SCHEDULER=off to disable)
 });

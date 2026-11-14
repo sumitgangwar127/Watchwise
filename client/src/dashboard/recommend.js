@@ -35,10 +35,11 @@ export function watchOptions(t, mine) {
 }
 
 /** `items` is the live catalog from the API, or the sample titles when there is no catalog yet. */
-export function buildModel(profile, items, historyItems = []) {
+export function buildModel(profile, items, historyItems = [], serverWeights = null) {
   const country = profile.country;
   const mine = profile.platforms ?? [];
-  const weights = tasteWeights(profile, historyItems);
+  // The server's taste adds usage (opens, trailer plays, "Watch on" clicks) and fades old activity; fall back to the local estimate
+  const weights = serverWeights && Object.keys(serverWeights).length ? serverWeights : tasteWeights(profile, historyItems);
 
   // Anything the user has watched, dropped or dismissed never appears in suggestions again
   const hidden = new Set(

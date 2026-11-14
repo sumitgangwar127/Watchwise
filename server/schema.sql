@@ -98,3 +98,42 @@ CREATE TABLE IF NOT EXISTS title_details (
 CREATE INDEX IF NOT EXISTS idx_titles_first_seen ON titles(first_seen);
 CREATE INDEX IF NOT EXISTS idx_history_title ON history(title_id);
 CREATE INDEX IF NOT EXISTS idx_availability_region ON availability(region, platform);
+
+-- Scheduled jobs: when each last ran, how it went, and when it is next due
+CREATE TABLE IF NOT EXISTS jobs (
+  id               TEXT PRIMARY KEY,
+  enabled          INTEGER NOT NULL DEFAULT 1,
+  last_run_at      TEXT,
+  last_status      TEXT,                          -- ok | warn | error | skipped
+  last_message     TEXT,
+  last_duration_ms INTEGER,
+  next_run_at      TEXT
+);
+
+-- Local usage events (opens, trailer plays, "Watch on" clicks). Never leaves this machine.
+CREATE TABLE IF NOT EXISTS events (
+  id         INTEGER PRIMARY KEY,
+  kind       TEXT NOT NULL,                       -- open | trailer_play | trailer_complete | watch_click
+  ref        TEXT NOT NULL,                       -- title id such as movie-27205
+  platform   TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
+
+-- In-app notifications created by the jobs
+CREATE TABLE IF NOT EXISTS alerts (
+  id         INTEGER PRIMARY KEY,
+  kind       TEXT NOT NULL,                       -- arrived | left | digest | health
+  title_id   INTEGER REFERENCES titles(id) ON DELETE CASCADE,
+  platform   TEXT,
+  message    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  read_at    TEXT
+);
+
+-- A history of the taste profile (genre weights), so changes are transparent
+CREATE TABLE IF NOT EXISTS taste_snapshots (
+  id         INTEGER PRIMARY KEY,
+  weights    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

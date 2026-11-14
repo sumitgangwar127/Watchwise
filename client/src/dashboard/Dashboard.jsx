@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark,
+  CalendarClock,
   CheckCircle2,
   Compass,
   Home,
@@ -18,8 +19,10 @@ import { Chip, Glow } from "../ui.jsx";
 import Ambient from "../components/Ambient.jsx";
 import Logo from "../components/Logo.jsx";
 import { useDominantColors } from "../colors.js";
+import AlertsBell from "./AlertsBell.jsx";
 import Hero from "./Hero.jsx";
 import { Card, Row } from "./Row.jsx";
+import SchedulesPanel from "./SchedulesPanel.jsx";
 import { paletteFor } from "./palette.js";
 import { buildModel, experimentalReason } from "./recommend.js";
 
@@ -68,8 +71,8 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
 
   // Suggestions rebuild whenever the catalog or the watch history changes
   const model = useMemo(
-    () => buildModel(profile, catalog?.items ?? [], hist.items),
-    [profile, catalog, hist.items],
+    () => buildModel(profile, catalog?.items ?? [], hist.items, hist.taste),
+    [profile, catalog, hist.items, hist.taste],
   );
   const [tab, setTab] = useState("home");
   const [query, setQuery] = useState("");
@@ -78,6 +81,7 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
   const [scrolled, setScrolled] = useState(false);
   const [toast, setToast] = useState("");
   const [heroItem, setHeroItem] = useState(null);
+  const [showSchedules, setShowSchedules] = useState(false);
   // Bias lighting takes its colors from the featured poster
   const ambient = useDominantColors(heroItem?.poster ?? null, heroItem?.palette ?? ["#a8142d", "#4a0715"]);
 
@@ -191,6 +195,7 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
               {live ? <span className="size-1.5 rounded-full bg-emerald-400" /> : <Info size={12} />}
               {live ? "Live · TMDB" : "Sample catalog"}
             </span>
+            <AlertsBell onOpenTitle={onOpenTitle} />
             <button
               onClick={onIntermission}
               aria-label="Start intermission (screen saver)"
@@ -270,6 +275,15 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
                         {refreshMsg && <div className="mt-1 text-xs text-white/40">{refreshMsg}</div>}
                       </div>
                     )}
+                    <button
+                      onClick={() => {
+                        setMenu(false);
+                        setShowSchedules(true);
+                      }}
+                      className="mb-3 flex items-center gap-2 text-white/70 transition hover:text-white"
+                    >
+                      <CalendarClock size={14} /> Schedules
+                    </button>
                     <button
                       onClick={() => {
                         setMenu(false);
@@ -450,6 +464,8 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
           )}
         </motion.main>
       </AnimatePresence>
+
+      <AnimatePresence>{showSchedules && <SchedulesPanel onClose={() => setShowSchedules(false)} />}</AnimatePresence>
 
       {/* Toast */}
       <AnimatePresence>

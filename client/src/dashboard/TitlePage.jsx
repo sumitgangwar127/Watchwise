@@ -11,6 +11,7 @@ import {
   Star,
 } from "lucide-react";
 import { COUNTRIES, platformById, watchUrl } from "../data.js";
+import { track } from "../track.js";
 import { byId } from "../demo.js";
 import Ambient from "../components/Ambient.jsx";
 import { useDominantColors } from "../colors.js";
@@ -76,6 +77,11 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
     return () => {
       off = true;
     };
+  }, [id]);
+
+  // Usage signal for the taste profile (stored locally only)
+  useEffect(() => {
+    track("open", id);
   }, [id]);
 
   // Sample titles (no TMDB key) get a simpler page built from the bundled data
@@ -271,6 +277,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
               {primary ? (
                 <a
                   href={watchUrl(primary, t.title)}
+                  onClick={() => track("watch_click", id, primary.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
@@ -364,9 +371,10 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
             key: "trailer",
             trailer: t.trailer,
             title: t.title,
+            titleId: id,
             backdrop: t.backdrop,
             from: trailerFrom,
-            cta: primary ? { label: `Watch on ${primary.name}`, href: watchUrl(primary, t.title), color: primary.color } : null,
+            cta: primary ? { label: `Watch on ${primary.name}`, href: watchUrl(primary, t.title), color: primary.color, onClick: () => track("watch_click", id, primary.id) } : null,
             onClose: () => setTrailerFrom(null),
           };
           return playerStyle === "theater" ? <TheaterPlayer {...props} stills={t.stills ?? []} /> : <TrailerPlayer {...props} stills={t.stills ?? []} />;
@@ -408,6 +416,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
                     <a
                       key={p.id}
                       href={watchUrl(p, t.title)}
+                      onClick={() => track("watch_click", id, p.id)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
@@ -434,6 +443,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
                     <a
                       key={p.id}
                       href={watchUrl(p, t.title)}
+                      onClick={() => track("watch_click", id, p.id)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="rounded-full border border-edge px-4 py-2 text-sm text-white/75 transition hover:border-white/30 hover:text-white"

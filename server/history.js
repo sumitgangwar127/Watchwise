@@ -51,17 +51,19 @@ export async function setHistory(id, status, rating = null) {
   db.prepare(
     `INSERT INTO history (title_id, status, rating, source, watched_at) VALUES (?, ?, ?, 'manual', ?)
      ON CONFLICT(title_id) DO UPDATE SET
-       status = excluded.status,
+       status = CASE WHEN history.status = 'watched' AND excluded.status = 'watchlist' THEN history.status ELSE excluded.status END,
        rating = COALESCE(excluded.rating, history.rating),
        watched_at = CASE WHEN excluded.status = 'watched' THEN COALESCE(history.watched_at, excluded.watched_at) ELSE history.watched_at END`,
   ).run(titleId, status, rating, watchedAt);
   return parsed;
 }
 
-export function removeHistory(id) {
+/** Remove a title's history entry. With `onlyStatus`, only if it currently has that status (so un-saving never erases "watched"). */
+export function removeHistory(id, onlyStatus = null) {
   const parsed = parseTitleId(id);
   if (!parsed) throw new Error("Invalid title id");
   db.prepare(
-    `DELETE FROM history WHERE title_id IN (SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?)`,
-  ).run(parsed.type, parsed.tmdbId);
+    `DELETE FROM history WHERE title_id IN (SELECT id FROM titles WHERE media_type = ? AND tmdb_id = ?)
+     AND (? IS NULL OR status = ?)`,
+  ).run(parsed.type, parsed.tmdbId, onlyStatus, onlyStatus);
 }

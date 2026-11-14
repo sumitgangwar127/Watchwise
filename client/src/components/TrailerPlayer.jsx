@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { track } from "../track.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
@@ -51,7 +52,7 @@ const YT = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3 };
  *
  * `from` is the on-screen rectangle of the button, `cta` is an optional "Watch on <platform>" action.
  */
-export default function TrailerPlayer({ trailer, title, backdrop, stills = [], from, cta, onClose }) {
+export default function TrailerPlayer({ trailer, title, titleId, backdrop, stills = [], from, cta, onClose }) {
   const reduce = useReducedMotion();
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
@@ -266,6 +267,14 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // Usage signals for the taste profile (stored locally): a play, and watching it to the end
+  useEffect(() => {
+    if (started && titleId) track("trailer_play", titleId);
+  }, [started, titleId]);
+  useEffect(() => {
+    if (ended && titleId) track("trailer_complete", titleId);
+  }, [ended, titleId]);
+
   // ---- animation ----
   const spring = reduce ? { duration: 0.01 } : { type: "spring", stiffness: 170, damping: 24, mass: 0.9 };
   const fromBox = { top: from.top, left: from.left, width: from.width, height: from.height };
@@ -321,7 +330,10 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
               href={cta.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={pauseForExit}
+              onClick={() => {
+                pauseForExit();
+                cta.onClick?.();
+              }}
               className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
               style={{ background: cta.color }}
             >
@@ -524,6 +536,7 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
                     {cta && (
                       <a
                         href={cta.href}
+                onClick={() => cta.onClick?.()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"

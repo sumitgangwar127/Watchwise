@@ -1,6 +1,16 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const KEY = "ww_list2";
+const TMDB_ID = /^(movie|tv)-\d+$/;
+
+/** Mirror a save or un-save to the server, so scheduled jobs can alert you when a saved title reaches your apps. */
+function syncToServer(id, saved) {
+  if (!TMDB_ID.test(id)) return; // sample titles aren't real
+  const request = saved
+    ? fetch("/api/history", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, status: "watchlist" }) })
+    : fetch(`/api/history/${encodeURIComponent(id)}?only=watchlist`, { method: "DELETE" }); // never erases a "watched" entry
+  request.catch(() => {});
+}
 
 /** "My List": titles saved for later. Stored in this browser as small snapshots. */
 export function useSaved() {
@@ -12,7 +22,11 @@ export function useSaved() {
     }
   });
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
   const toggle = useCallback((t) => {
+    syncToServer(t.id, !itemsRef.current.some((x) => x.id === t.id));
     setItems((cur) => {
       const snap = {
         id: t.id,
