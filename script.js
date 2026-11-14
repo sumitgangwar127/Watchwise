@@ -19,13 +19,8 @@
     var hero=document.querySelector('.hero');
     requestAnimationFrame(function(){requestAnimationFrame(function(){hero.classList.add('go')})});
     document.querySelectorAll('.rv').forEach(function(e){onView(e,function(){e.classList.add('in')},.05)});
-    document.querySelectorAll('[data-stagger]').forEach(function(g){
-      var kids=[].slice.call(g.children);
-      kids.forEach(function(c,i){c.classList.add('rv');c.style.setProperty('--i',i)});
-      onView(g,function(){kids.forEach(function(c){c.classList.add('in')})},.05);
-    });
-    var sh=document.getElementById('shelves'),st=document.getElementById('steps');
-    onView(sh,function(){sh.classList.add('in')},.6);
+    var sp=document.getElementById('strip'),st=document.getElementById('steps');
+    onView(sp,function(){sp.classList.add('in')},.4);
     onView(st,function(){st.classList.add('in')},.35);
   }
 })();

@@ -7,6 +7,7 @@
 <meta name="description" content="Watchwise is a free, local-first movie and show recommender. One private taste profile on your own computer, recommendations across the streaming platforms you actually have. No login, no cloud.">
 <link rel="canonical" href="https://sumitgangwar127.github.io/Watchwise/">
 <meta name="theme-color" content="#08060a">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Watchwise">
@@ -32,12 +33,11 @@
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="top">
-  <div class="wrap">
-    <a class="brand" href="#top" aria-label="Watchwise, back to top"><svg aria-hidden="true"><use href="#logo"/></svg>WATCHWISE</a>
-    <nav class="nav" aria-label="Main">
-      <a class="hide-s" href="#features">Features</a>
-      <a class="hide-s" href="#privacy">Privacy</a>
-      <a class="hide-s" href="#roadmap">Roadmap</a>
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="Watchwise, back to top"><svg aria-hidden="true"><use href="#logo"/></svg><span>WATCHWISE</span></a>
+    <nav aria-label="Main">
+      <a class="hide-s" href="#how">How it works</a>
+      <a href="#setup">Set up</a>
       <a href="https://github.com/sumitgangwar127/Watchwise" rel="noopener">GitHub</a>
     </nav>
   </div>
@@ -45,185 +45,154 @@
 
 <main id="main">
 <section class="hero" id="top">
-  <div class="wrap">
-    <div class="stub">Admit one &middot; Free &middot; Local-first</div>
-    <h1><span><span class="w" style="--i:0">Your</span> <span class="w" style="--i:1">taste.</span></span><span><span class="w grad" style="--i:2">Every</span> <span class="w grad" style="--i:3">platform.</span></span></h1>
-    <p class="lead">Every streaming app only recommends from its own catalog. Watchwise keeps one private taste profile on your own computer and shows what to watch across the platforms you actually have. Free, no login, no cloud.</p>
-    <div class="cta">
-      <a class="btn primary" href="#setup">Ask your AI to set it up</a>
-      <a class="btn ghost" href="https://github.com/sumitgangwar127/Watchwise" rel="noopener">View on GitHub</a>
+  <div class="beam" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <h1><span class="ln"><span class="w" style="--i:0">Your</span> <span class="w" style="--i:1">taste.</span></span> <span class="ln gold"><span class="w" style="--i:2">Every</span> <span class="w" style="--i:3">platform.</span></span></h1>
+    <div class="hero-side">
+      <p class="lead">Every streaming app recommends from its own shelf. Watchwise keeps one taste profile on your own computer and picks across the services you actually have.</p>
+      <div class="cta">
+        <a class="btn primary" href="#setup">Set it up with your AI</a>
+        <a class="textlink" href="https://github.com/sumitgangwar127/Watchwise" rel="noopener">Read the source</a>
+      </div>
+      <p class="facts">Free. No login. No cloud. Needs Node 22.9 or newer.</p>
     </div>
-    <p class="note">Open source. Early stage. Needs Node 22.9 or newer and a free TMDB token.</p>
+  </div>
+  <div class="wrap">
     <div class="frame">
-      <div class="bar" aria-hidden="true"><i></i><i></i><i></i><b>localhost:5173</b></div>
-      <img src="img/home.jpg" width="1440" height="900" alt="The Watchwise home screen: a featured banner for Project Hail Mary with a 99% match score, a Watch on Prime Video button, and the Picked for you row below.">
+      <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><b>localhost:5173</b></div>
+      <img src="img/home.jpg" width="1440" height="900" alt="The Watchwise home screen: a featured banner for Project Hail Mary with a 99% match score and a Watch on Prime Video button, and the first posters of the Picked for you row.">
     </div>
   </div>
 </section>
 
-<section id="problem">
+<section class="problem" id="problem">
   <div class="wrap">
-    <p class="label">The problem</p>
-    <h2 class="rv">Every app only knows <span class="grad">its own shelf.</span></h2>
-    <p class="lead rv">Open any streaming app and it recommends from what it sells. It has no idea what you watched somewhere else, and it will never point you to a better pick on a different service.</p>
-    <div class="shelves" id="shelves">
-      <div class="shelf"><h3><span class="badge b-n" aria-hidden="true">N</span>Netflix</h3><p>Recommends Netflix titles.</p><div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="shelf"><h3><span class="badge b-p" aria-hidden="true">P</span>Prime Video</h3><p>Recommends Prime Video titles.</p><div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="shelf"><h3><span class="badge b-h" aria-hidden="true">H</span>Hotstar</h3><p>Recommends Hotstar titles.</p><div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="shelf taste"><h3><span class="badge b-n" aria-hidden="true">N</span><span class="badge b-p" aria-hidden="true">P</span><span class="badge b-h" aria-hidden="true">H</span>Your taste profile</h3><p>One private profile on your computer, picking across all of them.</p></div>
-    </div>
-    <div class="merge rv"><p><strong>Watchwise looks across all of them.</strong> One taste profile, stored on your computer, picks from the platforms you chose, in your country.</p></div>
+    <h2>Every app only knows its own shelf.</h2>
+    <p class="body-lg">Netflix will never tell you the better pick is on Prime Video. Each app recommends what it sells, and none of them has seen what you watched somewhere else.</p>
   </div>
+  <figure class="strip" id="strip">
+    <img loading="lazy" src="img/strip.jpg" width="1600" height="330" alt="A row of seven film posters from Watchwise, each with small letter badges (N, P, H) showing which of the viewer's platforms stream it.">
+    <figcaption class="wrap">One row from Watchwise. The letters on each poster mark which of your platforms stream the title in your country.</figcaption>
+  </figure>
 </section>
 
-<section id="how">
+<section class="how" id="how">
   <div class="wrap">
-    <p class="label">How it works</p>
-    <h2 class="rv">Three steps, <span class="grad">no account.</span></h2>
+    <h2>One profile, built where you can see it.</h2>
     <ol class="steps" id="steps">
-      <li><h3>Tell it your taste</h3><p>A short onboarding: your country, your platforms, the genres you like. Watch history is optional and import is coming soon.</p></li>
-      <li><h3>It builds one local profile</h3><p>Watchwise pulls a real catalog from TMDB and checks which of your platforms stream each title in your country. Your profile is saved in a local database, and scheduled jobs keep the catalog fresh while the app is open.</p></li>
-      <li><h3>Pick, watch, mark watched</h3><p>Choose from rows made for you. Mark a title as watched and it disappears from your picks and nudges your taste.</p></li>
+      <li><h3>A short onboarding</h3><p>Your country, the platforms you have, which AI tool you use, your taste, and optionally some watch history. History import from other services is coming soon; for now you can add titles by hand.</p></li>
+      <li><h3>A profile in a local database</h3><p>Watchwise pulls a real catalog from TMDB and marks which of your platforms stream each title in your country. Your profile lives in a SQLite file on your machine.</p></li>
+      <li><h3>Pick, watch, mark it watched</h3><p>Rows are built from your taste. &ldquo;Watched already&rdquo; hides a title and teaches the profile. So do the titles you open, the trailers you play and the Watch on buttons you click.</p></li>
     </ol>
   </div>
 </section>
 
-<section id="features">
-  <div class="wrap">
-    <p class="label">What you get today</p>
-    <h2 class="rv">Real screens from <span class="grad">the real app.</span></h2>
-    <p class="lead rv">Every image below is a capture of Watchwise running locally.</p>
-
-    <div class="feat" data-stagger>
-      <div class="txt">
-        <span class="tag">Home</span>
-        <h3>Rows made from your taste</h3>
-        <p>A featured banner, then &ldquo;Picked for you&rdquo;, &ldquo;Because you like&hellip;&rdquo; and &ldquo;Try something different&rdquo;. Letter badges show which of your platforms stream each title, and a Watch button opens it there.</p>
-      </div>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/home.jpg" width="1440" height="900" alt="Watchwise home screen with the featured banner and the Picked for you row of posters with platform badges."></figure></div>
+<section class="features" id="features">
+  <div class="wrap f-title rv">
+    <div class="f-text">
+      <h2>Every pick says why.</h2>
+      <p>The title page shows a match score with the reason in plain words, such as &ldquo;Because you like Action, Sci-Fi and Crime&rdquo;. Below it: where to watch on your platforms, cast, details and similar titles.</p>
+      <p class="note">Today the score is a simple genre-and-history score. The AI engine is coming soon.</p>
     </div>
+    <figure class="shot"><img loading="lazy" src="img/title.jpg" width="1440" height="900" alt="The Watchwise page for Inception: a 99% match, Watch on Netflix, Watched already and My List buttons, a Watch trailer button on the banner, and a Why we picked this for you card."></figure>
+  </div>
 
-    <div class="feat flip" data-stagger>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/title.jpg" width="1440" height="900" alt="The Watchwise page for Inception with a 99% match, a Watch on Netflix button, a Watch trailer button and a Why we picked this for you card."></figure></div>
-      <div class="txt">
-        <span class="tag">Title page</span>
-        <h3>Why we picked this for you</h3>
-        <p>A framed banner, a Watch trailer button, a match score with a plain reason, where to watch on your platforms, cast, details and similar titles.</p>
-        <p class="cap">Today the match score is a simple genre-and-history score. A smarter AI engine is coming soon.</p>
-      </div>
+  <figure class="f-room rv">
+    <img loading="lazy" src="img/player.jpg" width="1600" height="900" alt="The home-theater trailer player: a wide screen in a warm dark room with two speakers and red seats, playing the Inception trailer, with a Watch on Netflix button below it.">
+    <figcaption class="wrap"><div><h2>Trailers play in a dark room.</h2><p>Press Watch trailer and the screen goes wide in a home-theater room, with ambient light that follows the picture. Nothing plays until you press it.</p></div></figcaption>
+  </figure>
+
+  <div class="wrap f-inter rv">
+    <div class="f-text">
+      <h2>Leave it idle and it tells you stories.</h2>
+      <p>After a few idle minutes the lights dim and Intermission takes over: stories, numbers, cast and moments from titles, built from verified TMDB data.</p>
     </div>
+    <figure class="shot"><img loading="lazy" src="img/intermission.jpg" width="1440" height="900" alt="Intermission: a dimmed poster backdrop for Avengers: Endgame with a short story about the film and the time in the corner."></figure>
+  </div>
 
-    <div class="feat" data-stagger>
-      <div class="txt">
-        <span class="tag">Home-theater player</span>
-        <h3>A trailer room, in first person</h3>
-        <p>Trailers play on a wide screen in a dark room, with ambient light that follows the picture. A Watch on button sits right beside it. Nothing plays until you press play.</p>
-      </div>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/player.jpg" width="1600" height="900" alt="The home-theater trailer player: a wide screen in a warm dark room with speakers and red seats, showing the Inception trailer."></figure></div>
+  <div class="wrap f-sched rv">
+    <div class="f-text">
+      <h2>It keeps itself fresh.</h2>
+      <p>Jobs run while Watchwise is open and catch up when you come back after a break.</p>
+      <dl class="jobs">
+        <div><dt>Find new content</dt><dd>Trending titles, new releases and titles similar to ones you liked.</dd></div>
+        <div><dt>Check where titles stream</dt><dd>Alerts you when a saved title arrives on, or leaves, one of your apps.</dd></div>
+        <div><dt>Update your taste</dt><dd>Recalculates from what you watched, rated and opened. Recent activity counts more.</dd></div>
+        <div><dt>Tidy, back up, check health</dt><dd>Daily cleanup, a weekly backup and a weekly health check.</dd></div>
+      </dl>
+      <p class="note">Open Schedules to see each job&rsquo;s last and next run, pause it or run it now. The bell lists new titles and streaming changes.</p>
     </div>
+    <figure class="shot tall"><img loading="lazy" src="img/schedules-panel.jpg" width="760" height="934" alt="The Schedules panel: Find new content, Check where titles stream, Update your taste profile and Tidy the database, each with a switch, a last result, a next run and a Run now button."></figure>
+  </div>
 
-    <div class="feat flip" data-stagger>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/intermission.jpg" width="1440" height="900" alt="The Intermission screen saver: a dimmed poster backdrop with a short story from the film Avengers: Endgame and a clock."></figure></div>
-      <div class="txt">
-        <span class="tag">Intermission</span>
-        <h3>A screen saver with stories</h3>
-        <p>When the app sits idle, the house lights dim and Intermission shows stories, numbers, cast and moments from titles, built from verified TMDB data.</p>
-      </div>
+  <div class="wrap f-phone rv">
+    <div class="phones">
+      <div class="phone"><img loading="lazy" src="img/phone-home.jpg" width="585" height="1266" alt="Watchwise home screen on a phone, with a bottom tab bar."></div>
+      <div class="phone"><img loading="lazy" src="img/phone-title.jpg" width="585" height="1266" alt="A Watchwise title page on a phone."></div>
     </div>
-
-    <div class="feat" data-stagger>
-      <div class="txt">
-        <span class="tag">Automatic updates and alerts</span>
-        <h3>It keeps itself fresh</h3>
-        <p>Scheduled jobs run while Watchwise is open and catch up after a break: they find trending titles, new releases and titles similar to ones you liked, re-check where titles stream, update your taste, tidy the database, and make a weekly backup and health check.</p>
-        <p>A Schedules panel shows each job&rsquo;s last and next run, and lets you pause or run it. A bell alerts you to new titles, and when a saved title arrives on, or leaves, one of your apps.</p>
-      </div>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/schedules.jpg" width="1440" height="900" alt="The Schedules panel: jobs such as Find new content and Check where titles stream, each with a switch, its last result, its next run and a Run now button."></figure></div>
-    </div>
-
-
-    <div class="feat" data-stagger>
-      <div class="txt">
-        <span class="tag">Watched already</span>
-        <h3>Mark it once, it learns</h3>
-        <p>&ldquo;Watched already&rdquo; saves the title to a local database, hides it from your picks and teaches your taste. Taste also learns from how you use the app on your computer (titles you open, trailers you play, &ldquo;Watch on&rdquo; clicks), with recent activity counting more.</p>
-      </div>
-      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/watched.jpg" width="860" height="610" alt="Close-up of the Inception title page showing the Watch on Netflix, Watched already and My List buttons."></figure></div>
-    </div>
-
-    <div class="feat flip" data-stagger>
-      <div class="phones" aria-label="Phone layout screenshots">
-        <div class="phone"><img loading="lazy" src="img/phone-home.jpg" width="585" height="1266" alt="Watchwise home screen on a phone with a bottom tab bar."></div>
-        <div class="phone"><img loading="lazy" src="img/phone-title.jpg" width="585" height="1266" alt="A Watchwise title page on a phone."></div>
-      </div>
-      <div class="txt">
-        <span class="tag">Phone and desktop</span>
-        <h3>Fits the screen you have</h3>
-        <p>Desktop and mobile layouts. To use it on a phone, open your computer&rsquo;s address on port 5173 while on the same Wi-Fi.</p>
-      </div>
+    <div class="f-text">
+      <h2>The same app on your phone.</h2>
+      <p>Open your computer&rsquo;s address on port 5173 from a phone on the same Wi-Fi. The layout switches to a tab bar. Your data stays on the computer.</p>
     </div>
   </div>
 </section>
 
-<section id="film">
+<section class="film" id="film">
   <div class="wrap">
-    <p class="label">The intro film</p>
-    <h2 class="rv">44 seconds, <span class="grad">no sound.</span></h2>
-    <p class="lead rv">A quick tour. It only downloads when you press play.</p>
-    <div class="video-wrap rv">
-      <video controls preload="none" poster="img/poster.jpg" width="1280" height="720" aria-label="Watchwise intro film, 44 seconds, silent">
+    <h2>The 44-second version.</h2>
+    <div class="video-wrap">
+      <video controls preload="none" poster="img/poster.jpg" width="1280" height="720" aria-label="Watchwise intro film, 44 seconds, no sound">
         <source src="video/watchwise-intro.mp4" type="video/mp4">
         Your browser can not play this video. <a href="video/watchwise-intro.mp4">Download the intro film</a>.
       </video>
     </div>
+    <p class="cap">No sound. It downloads only when you press play.</p>
   </div>
 </section>
 
 <section class="setup" id="setup">
   <div class="wrap">
-    <p class="label">Setup</p>
-    <h2 class="rv">Let your AI <span class="grad">set it up.</span></h2>
-    <p class="lead rv">Paste this into your AI coding tool. It does the installing and asks you only for your free TMDB token.</p>
+    <h2>Hand this to your AI.</h2>
+    <p class="body-lg">Paste it into Claude Code, Codex, Cursor or Gemini CLI. It installs everything and asks you for one thing: a free TMDB token.</p>
 
-    <div class="ticket rv">
-      <div class="top"><span class="stub">Admit one</span><span class="status">Works in Claude Code, Codex, Cursor or Gemini CLI</span></div>
-      <p class="promptbox" id="prompt">Clone https://github.com/sumitgangwar127/Watchwise, read AGENTS.md, then install it and start it. When you need my TMDB token, ask me for it (it's free at themoviedb.org/settings/api) and put it in .env. Then open http://localhost:5173 and tell me when it's ready.</p>
-      <div class="copyrow">
+    <div class="ticket">
+      <div class="ticket-main">
+        <p class="promptbox" id="prompt">Clone https://github.com/sumitgangwar127/Watchwise, read AGENTS.md, then install it and start it. When you need my TMDB token, ask me for it (it's free at themoviedb.org/settings/api) and put it in .env. Then open http://localhost:5173 and tell me when it's ready.</p>
+      </div>
+      <div class="ticket-stub">
+        <span class="admit">Admit one</span>
         <button type="button" class="btn primary copy" id="copy"><svg class="tick" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span id="copylabel">Copy prompt</span></button>
         <span class="status" id="status" role="status" aria-live="polite"></span>
       </div>
-      <p class="next"><strong>What happens next:</strong> about a minute for the install, then Watchwise opens in your browser and walks you through onboarding.</p>
-      <div class="tools" aria-label="Compatible tools"><span>Claude Code</span><span>Codex</span><span>Cursor</span><span>Gemini CLI</span></div>
     </div>
+    <p class="next"><strong>What happens next:</strong> about a minute while it installs, then Watchwise opens in your browser and starts onboarding.</p>
 
-    <div class="manual rv">
-      <h3>Or do it yourself</h3>
+    <div class="manual">
+      <h3>Or do it by hand</h3>
       <pre><code>git clone https://github.com/sumitgangwar127/Watchwise.git
 cd Watchwise
 npm install
 npm start</code></pre>
-      <p>Add a free TMDB token to <code>.env</code> first (copy <code>.env.example</code>, then set <code>TMDB_ACCESS_TOKEN</code>). Requires <strong>Node 22.9 or newer</strong>. Open <code>http://localhost:5173</code> when it starts. Without a token the app runs with sample titles.</p>
+      <p>Before <code>npm start</code>, copy <code>.env.example</code> to <code>.env</code> and add your free TMDB token as <code>TMDB_ACCESS_TOKEN</code>. Needs <strong>Node 22.9 or newer</strong>. Then open <code>http://localhost:5173</code>. Without a token the app runs on sample titles.</p>
     </div>
   </div>
 </section>
 
-<section id="privacy">
+<section class="privacy" id="privacy">
   <div class="wrap">
-    <p class="label">Privacy</p>
-    <h2 class="rv">Your taste <span class="grad">stays home.</span></h2>
-    <div class="cols" data-stagger>
-      <div class="card local">
-        <h3>Stays on your computer</h3>
+    <h2>Your taste stays on your computer.</h2>
+    <div class="priv">
+      <div>
+        <h3>Stays here</h3>
         <ul>
           <li>Your taste profile and what you marked as watched, in a local database</li>
-          <li>Usage signals that teach your taste (opens, trailer plays, &ldquo;Watch on&rdquo; clicks), stored only on your computer and clearable any time from Schedules</li>
+          <li>Usage signals that teach your taste (titles opened, trailers played, Watch on clicks), clearable any time from Schedules</li>
           <li>Your lists and settings</li>
-          <li>No account, no login, no cloud. This site has no analytics or trackers</li>
-          <li>The app&rsquo;s API listens only on your own machine (127.0.0.1)</li>
+          <li>The app&rsquo;s API listens only on 127.0.0.1. No account, no analytics here or on this site.</li>
         </ul>
       </div>
-      <div class="card">
-        <h3>Sent to TMDB</h3>
+      <div>
+        <h3>Goes to TMDB</h3>
         <ul>
           <li>Your country, to find where titles stream</li>
           <li>The platforms and genres you chose, to fetch a matching catalog</li>
@@ -234,16 +203,15 @@ npm start</code></pre>
   </div>
 </section>
 
-<section id="roadmap">
+<section class="roadmap" id="roadmap">
   <div class="wrap">
-    <p class="label">Roadmap</p>
-    <h2 class="rv">Honest about <span class="grad">what is next.</span></h2>
-    <p class="lead rv">Watchwise is early stage. These are planned, not built. Scheduled updates and alerts already work.</p>
-    <ul class="road" data-stagger>
-      <li><span class="soon">Coming soon</span><div><strong>AI suggestion engine</strong><span class="d">The app detects Claude Code, Codex, Cursor Agent and Gemini CLI and has editable rule files, but does not call them yet.</span></div></li>
-      <li><span class="soon">Coming soon</span><div><strong>Watch history import</strong><span class="d">Paste, Netflix, Amazon, Letterboxd and Trakt are planned.</span></div></li>
-      <li><span class="soon">Coming soon</span><div><strong>Chat and MCP control</strong><span class="d">Drive Watchwise from your AI tool.</span></div></li>
-      <li><span class="soon">Coming soon</span><div><strong>Watch together and new-episode tracking</strong><span class="d">On the longer-term list.</span></div></li>
+    <h2>Not built yet.</h2>
+    <p class="body-lg">Everything above works today. These do not exist yet.</p>
+    <ul class="road">
+      <li><div><strong>AI suggestion engine</strong><span>The app detects Claude Code, Codex, Cursor Agent and Gemini CLI and has editable rule files, but never calls them.</span></div><em>coming soon</em></li>
+      <li><div><strong>Watch history import</strong><span>Paste, Netflix, Amazon, Letterboxd and Trakt are planned.</span></div><em>coming soon</em></li>
+      <li><div><strong>Chat and MCP control</strong><span>Drive Watchwise from your AI tool.</span></div><em>coming soon</em></li>
+      <li><div><strong>New-episode tracking and watch together</strong><span>On the longer-term list.</span></div><em>coming soon</em></li>
     </ul>
   </div>
 </section>
@@ -251,12 +219,12 @@ npm start</code></pre>
 
 <footer>
   <div class="wrap">
-    <div class="row">
-      <a class="brand" href="#top" aria-label="Watchwise, back to top"><svg aria-hidden="true"><use href="#logo"/></svg>WATCHWISE</a>
-      <a href="https://github.com/sumitgangwar127/Watchwise" rel="noopener">github.com/sumitgangwar127/Watchwise</a>
+    <div class="foot-row">
+      <a class="brand" href="#top" aria-label="Watchwise, back to top"><svg aria-hidden="true"><use href="#logo"/></svg><span>WATCHWISE</span></a>
+      <a class="textlink" href="https://github.com/sumitgangwar127/Watchwise" rel="noopener">github.com/sumitgangwar127/Watchwise</a>
     </div>
-    <p style="margin:0">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
-    <p style="margin:0;color:var(--dim)">Posters and film images belong to their owners and are provided by TMDB. Streaming platform names are used only to describe availability.</p>
+    <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p class="dim">Posters and film images belong to their owners and are provided by TMDB. Streaming platform names are used only to describe availability.</p>
   </div>
 </footer>
 <script src="script.js"></script>
