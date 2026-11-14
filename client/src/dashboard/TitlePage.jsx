@@ -346,7 +346,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
                   aria-label="Play trailer"
                   className="group absolute inset-0 grid place-items-center"
                 >
-                  <span className="flex items-center gap-2 rounded-full bg-black/60 px-6 py-3 text-sm font-semibold ring-1 ring-white/35 backdrop-blur transition group-hover:scale-105 group-hover:bg-black/75">
+                  <span className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-white/35 backdrop-blur transition group-hover:bg-black/80 md:bottom-5 md:right-5">
                     <Play size={16} className="fill-white" /> Watch trailer
                   </span>
                 </button>
