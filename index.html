@@ -81,7 +81,7 @@
     <h2 class="rv">Three steps, <span class="grad">no account.</span></h2>
     <ol class="steps rv">
       <li><h3>Tell it your taste</h3><p>A short onboarding: your country, your platforms, the genres you like. Watch history is optional and import is coming soon.</p></li>
-      <li><h3>It builds one local profile</h3><p>Watchwise pulls a real catalog from TMDB and checks which of your platforms stream each title in your country. Your profile is saved in a local database.</p></li>
+      <li><h3>It builds one local profile</h3><p>Watchwise pulls a real catalog from TMDB and checks which of your platforms stream each title in your country. Your profile is saved in a local database, and scheduled jobs keep the catalog fresh while the app is open.</p></li>
       <li><h3>Pick, watch, mark watched</h3><p>Choose from rows made for you. Mark a title as watched and it disappears from your picks and nudges your taste.</p></li>
     </ol>
   </div>
@@ -126,15 +126,26 @@
       <div class="txt">
         <span class="tag">Intermission</span>
         <h3>A screen saver with stories</h3>
-        <p>When the app sits idle, the house lights dim and Intermission shows stories, numbers and moments from titles, built from verified TMDB data.</p>
+        <p>When the app sits idle, the house lights dim and Intermission shows stories, numbers, cast and moments from titles, built from verified TMDB data.</p>
       </div>
     </div>
 
     <div class="feat rv">
       <div class="txt">
+        <span class="tag">Automatic updates and alerts</span>
+        <h3>It keeps itself fresh</h3>
+        <p>Scheduled jobs run while Watchwise is open and catch up after a break: they find trending titles, new releases and titles similar to ones you liked, re-check where titles stream, update your taste, tidy the database, and make a weekly backup and health check.</p>
+        <p>A Schedules panel shows each job&rsquo;s last and next run, and lets you pause or run it. A bell alerts you to new titles, and when a saved title arrives on, or leaves, one of your apps.</p>
+      </div>
+      <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/schedules.jpg" width="1440" height="900" alt="The Schedules panel: jobs such as Find new content and Check where titles stream, each with a switch, its last result, its next run and a Run now button."></figure></div>
+    </div>
+
+
+    <div class="feat rv">
+      <div class="txt">
         <span class="tag">Watched already</span>
         <h3>Mark it once, it learns</h3>
-        <p>&ldquo;Watched already&rdquo; saves the title to a local database, hides it from your picks and teaches your taste.</p>
+        <p>&ldquo;Watched already&rdquo; saves the title to a local database, hides it from your picks and teaches your taste. Taste also learns from how you use the app on your computer (titles you open, trailers you play, &ldquo;Watch on&rdquo; clicks), with recent activity counting more.</p>
       </div>
       <div><figure class="shot" style="margin:0"><img loading="lazy" src="img/watched.jpg" width="860" height="610" alt="Close-up of the Inception title page showing the Watch on Netflix, Watched already and My List buttons."></figure></div>
     </div>
@@ -204,6 +215,7 @@ npm start</code></pre>
         <h3>Stays on your computer</h3>
         <ul>
           <li>Your taste profile and what you marked as watched, in a local database</li>
+          <li>Usage signals that teach your taste (opens, trailer plays, &ldquo;Watch on&rdquo; clicks), stored only on your computer and clearable any time from Schedules</li>
           <li>Your lists and settings</li>
           <li>No account, no login, no cloud. This site has no analytics or trackers</li>
           <li>The app&rsquo;s API listens only on your own machine (127.0.0.1)</li>
@@ -214,7 +226,7 @@ npm start</code></pre>
         <ul>
           <li>Your country, to find where titles stream</li>
           <li>The platforms and genres you chose, to fetch a matching catalog</li>
-          <li>Never your watch history</li>
+          <li>Never your watch history or usage signals</li>
         </ul>
       </div>
     </div>
@@ -225,13 +237,12 @@ npm start</code></pre>
   <div class="wrap">
     <p class="label">Roadmap</p>
     <h2 class="rv">Honest about <span class="grad">what is next.</span></h2>
-    <p class="lead rv">Watchwise is early stage. These are planned, not built.</p>
+    <p class="lead rv">Watchwise is early stage. These are planned, not built. Scheduled updates and alerts already work.</p>
     <ul class="road rv">
       <li><span class="soon">Coming soon</span><div><strong>AI suggestion engine</strong><span class="d">The app detects Claude Code, Codex, Cursor Agent and Gemini CLI and has editable rule files, but does not call them yet.</span></div></li>
-      <li><span class="soon">Coming soon</span><div><strong>Daily automatic updates</strong><span class="d">Today a refresh runs at the end of onboarding or when you run <code>npm run refresh</code>.</span></div></li>
       <li><span class="soon">Coming soon</span><div><strong>Watch history import</strong><span class="d">Paste, Netflix, Amazon, Letterboxd and Trakt are planned.</span></div></li>
       <li><span class="soon">Coming soon</span><div><strong>Chat and MCP control</strong><span class="d">Drive Watchwise from your AI tool.</span></div></li>
-      <li><span class="soon">Coming soon</span><div><strong>Alerts, watch together, series tracking</strong><span class="d">On the longer-term list.</span></div></li>
+      <li><span class="soon">Coming soon</span><div><strong>Watch together and new-episode tracking</strong><span class="d">On the longer-term list.</span></div></li>
     </ul>
   </div>
 </section>
