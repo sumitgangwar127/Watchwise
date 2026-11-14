@@ -14,10 +14,12 @@ Where the project is going. Items are goals, not promises, and the order can cha
 | Title pages: trailer, cast, details, where to watch, similar titles | Built |
 | "Watched already": saved locally, hides the title, shifts your taste | Built |
 | Home-theater trailer player, ambient lighting, intermission mode | Built |
-| Local SQLite database, `npm run refresh`, `npm run status` | Built |
+| Local SQLite database, `npm run refresh`, `npm run status`, `npm run jobs` | Built |
+| Scheduler with catch-up, Schedules panel, daily find-new, availability sync, taste update, maintenance, weekly backup and health check | Built |
+| Alerts (new titles found, saved title arrives or leaves your apps), usage events feeding taste | Built |
+| Intermission with stories, facts and moments from verified TMDB data | Built |
 | Recommendations | **Placeholder:** simple genre and history scoring, not AI |
 | AI suggestion engine (Claude Code, Codex, Cursor Agent, Gemini) | **Not built** (CLIs are detected, never called) |
-| Daily automatic refresh | **Not built** |
 | Watch history import | **Not built** (pasted titles are stored as raw text) |
 | Chat and agent control (CLI commands, MCP) | **Not built** |
 
@@ -31,7 +33,8 @@ The core promise. Everything else builds on this.
   - [ ] Store each suggestion with its reason and how the user reacted
   - [ ] Cache results and refresh daily, not on every page load
   - [ ] Treat web content as untrusted: the AI returns JSON only, the app does all writing
-- [ ] **Daily refresh** with catch-up when the app is opened after a missed day, plus a `find-new` command
+- [x] **Daily refresh** with catch-up when the app is opened after a missed day (scheduler, `npm run jobs -- run find-new`)
+- [ ] A dedicated `find-new` command shortcut
 - [ ] **Watch history import**
   - [ ] Paste a list of titles and match them to TMDB
   - [ ] Netflix and Amazon "download my data" exports
@@ -41,7 +44,8 @@ The core promise. Everything else builds on this.
 
 ## Phase 2: Smarter taste
 
-- [ ] More signals: ratings, drop-offs, "not interested", rewatches, cast and director, runtime and mood ("I have 90 minutes")
+- [x] Usage signals (opens, trailer plays, "Watch on" clicks) and recency decay in the taste profile
+- [ ] More signals: drop-offs, "not interested", rewatches, cast and director, runtime and mood ("I have 90 minutes")
 - [ ] Close the experimental loop: promote a genre into the main feed after you rate a few of its picks highly
 - [ ] "Why this?" on every pick, and a way to correct the AI ("stop suggesting horror")
 - [ ] A readable taste-profile file that you and the AI both edit
@@ -57,7 +61,8 @@ The core promise. Everything else builds on this.
 ## Phase 4: Features people will use
 
 - [ ] **Watch together:** combine two or more people's tastes and platforms into one pick, exchanged as local files
-- [ ] **Alerts:** a title on your list just reached one of your apps, or is about to leave
+- [x] **Alerts:** a saved title reached one of your apps, or left one
+- [ ] Alerts for a title that is about to leave (TMDB doesn't publish this, so it needs another source)
 - [ ] **Series tracking:** where you are in a show, and "next up"
 - [ ] **Lists and moods:** shelves like "rainy-day comfort" or "mind-benders"
 - [ ] **Subscription helper:** which of your apps you barely use

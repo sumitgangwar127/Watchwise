@@ -16,11 +16,14 @@ Never print, commit or send the contents of `.env`. Restart `npm start` after ed
 |---|---|---|
 | `npm run status` | ✔ implemented | Show onboarding state, TMDB configured?, row counts, detected AI CLIs |
 | `npm run refresh` | ✔ implemented | Update the catalog from TMDB for the user's country and platforms (incremental) |
+| `npm run jobs` | ✔ implemented | List the scheduled jobs. `npm run jobs -- run <id>` runs one now (ids: find-new, sync-availability, update-taste, maintenance, backup, health-check). `npm run jobs -- run-due` runs whatever is due and exits (for cron or launchd). |
 | `find-new` | planned | Search the web for new releases and add verified titles |
 | `log-watched` | planned | Record a watched title with a rating |
 | `recommend` | planned | Rebuild the main and experimental feeds |
 
-When the user says "refresh", run `npm run refresh`. "Find new content" will map to `find-new` once it exists; until then, use `refresh`.
+When the user says "refresh", run `npm run refresh`. When they say "find new content", run `npm run jobs -- run find-new`.
+
+The app runs the jobs itself while it is open and catches up on missed ones (set `WATCHWISE_SCHEDULER=off` to disable). Job state lives in the `jobs` table; alerts in `alerts`; local usage events in `events`. Never send usage events or watch history anywhere.
 
 Note: `api.themoviedb.org` is called over HTTP/2 (`server/tmdb.js`) because some networks reset HTTP/1.1 connections to it. Don't switch it to plain `fetch` without testing.
 

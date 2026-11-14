@@ -6,9 +6,19 @@
 
 **One taste profile across every streaming platform. Private, local and free.**
 
-Every streaming app recommends only from its own catalog, using only what you did on that app. Watchwise keeps a single taste profile on your own computer and uses the AI you already have (Claude Code, Codex, Gemini CLI, Cursor) to decide what you should watch next, wherever it streams.
+Every streaming app recommends only from its own catalog, using only what you did on that app. Watchwise keeps a single taste profile on your own computer and shows you what to watch next across all the platforms you actually have, in your country.
 
-> **Status: early stage.** The app, onboarding, dashboard and the real TMDB catalog (posters, genres, where each title streams in your country) work today. The AI suggestion engine is **not built yet**, so the "match" scores and rows are a simple genre-based placeholder for now. See [What works today](#what-works-today).
+> **Status: early stage.** The app, the real TMDB catalog, the title pages, the home-theater trailer player, watch-history learning and the scheduled updates all work today. The AI suggestion engine (your own Claude Code, Codex, Cursor or Gemini) is **not built yet**, so recommendations come from a simple taste score based on your genres, history and usage. See [What works today](#what-works-today) and the [roadmap](ROADMAP.md).
+
+## Watch the intro
+
+<p align="center">
+  <a href="docs/watchwise-intro.mp4">
+    <img src="docs/intro-poster.jpg" alt="Watchwise intro video. Click to play the 44-second film." width="90%">
+  </a>
+</p>
+
+<p align="center"><sub>44 seconds, silent. Click the picture to play it on GitHub.</sub></p>
 
 ## Why
 
@@ -16,45 +26,124 @@ Every streaming app recommends only from its own catalog, using only what you di
 - Paid recommendation apps cost money you may not want to spend.
 - Your watch history is your data. It should live on your machine, not on someone else's server.
 
+## A look at it
+
+<p align="center">
+  <img src="docs/screenshots/home.jpg" alt="The home screen: a featured title with its match score, then rows of picks for you. Each poster shows which of your apps stream it." width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/title.jpg" alt="A title page: framed banner, why it was picked for you, where to watch, cast and details."></td>
+    <td width="50%"><img src="docs/screenshots/trailer-room.jpg" alt="The trailer plays on a screen in a small home theater, seen from your seat, with speakers and seats."></td>
+  </tr>
+  <tr>
+    <td><b>Title pages.</b> A framed banner and a plain reason for every pick ("Because you like Sci-Fi and Crime"), then where it streams for you, the cast and similar titles.</td>
+    <td><b>Home-theater trailers.</b> The trailer plays in a room seen from your seat. The room's light follows the trailer's colors.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/intermission.jpg" alt="Intermission screen: a short synopsis over a dimmed film still, with a clock."></td>
+    <td><img src="docs/screenshots/schedules.jpg" alt="The Schedules panel: six jobs, each with its last result and next run, a switch and a Run now button."></td>
+  </tr>
+  <tr>
+    <td><b>Intermission.</b> A calm screen saver of stories, numbers, cast and moments from titles, built only from verified TMDB data.</td>
+    <td><b>Schedules.</b> Daily and weekly jobs keep your catalog fresh and your taste current. You can see, run or pause each one.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/mobile-home.jpg" alt="The home screen on a phone." width="23%">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-title.jpg" alt="A title page on a phone." width="23%">
+</p>
+
+<p align="center"><sub>Works on phones and desktops.</sub></p>
+
+## What it does
+
+- **One catalog across your apps.** Real titles, posters, backdrops and ratings from TMDB, filtered to what streams on the platforms you picked, in your country. "Watch on Netflix" and friends open the right platform.
+- **A taste profile that learns.** It starts from the genres you choose, then learns from what you mark watched and rate, and from what you open, play and click. Recent activity counts more than old.
+- **"Watched already."** One button saves a title to your local history, hides it from suggestions, shifts your taste, and pulls in similar new titles.
+- **An experimental lane.** A separate "Try something different" row suggests genres you haven't tried, so your taste can grow.
+- **Alerts.** A bell tells you when new titles were found, when a title you saved reaches one of your apps, or when it leaves.
+- **Private by design.** No login, no cloud. Everything lives in a SQLite file on your computer.
+
+## Automatic updates
+
+Watchwise is local, so there is no server in the cloud. Jobs run while the app is open (checked every minute), and **catch up** when you open it after a break. Open **Schedules** from the profile menu to see each job's last result and next run, switch it off, or run it now.
+
+| Job | When | What it does |
+|---|---|---|
+| Find new content | Daily | Trending titles, new releases and popular titles on your apps in your genres, plus titles similar to ones you liked. Posts a "found N new titles" alert. |
+| Check where titles stream | Daily | Re-checks your saved and top titles. Alerts you when a saved title reaches or leaves one of your apps. |
+| Update your taste profile | Daily, and instantly when you mark something | Recalculates your genre weights from history and usage. A snapshot is kept for transparency. |
+| Tidy the database | Daily | Removes stale cache, unused titles and old logs. |
+| Back up your data | Weekly | Saves a copy of the database to `data/backups`, keeping the last four. |
+| Health check | Weekly | Warns you if the TMDB token or your AI command line stopped working. |
+
+**What counts as "usage".** Watchwise records, locally, when you open a title, play or finish a trailer, or click "Watch on". A "Watch on" click counts for more than a trailer play, and one of each per title per day is counted. You can clear this data any time from Schedules, and it never leaves your computer.
+
+**Run jobs when the app is closed.** From the project folder:
+
+```bash
+npm run jobs                  # list the jobs and when each is due
+npm run jobs -- run find-new  # run one now
+npm run jobs -- run-due       # run whatever is due, then exit
+```
+
+To do that automatically, add `run-due` to your computer's scheduler. For example, with cron on Mac or Linux (adjust the path, and make sure `npm` is on cron's PATH):
+
+```cron
+0 7 * * * cd /path/to/Watchwise && npm run jobs -- run-due >> data/jobs.log 2>&1
+```
+
+Set `WATCHWISE_SCHEDULER=off` to stop the app from running jobs itself.
+
 ## How it is meant to work
 
 <p align="center">
   <img src="docs/how-it-works.svg" alt="Diagram: the Watchwise app talks to a local server and SQLite database, which talks to your AI command line. Built parts are solid, planned parts are dashed." width="100%">
 </p>
 
-In text: React app ⇄ local server and SQLite ⇄ your AI command line, which reads `rules/*.md` plus your data and, once built, searches the web daily.
+In text: React app ⇄ local server and SQLite ⇄ your AI command line, which will read `rules/*.md` plus your data and, once built, search the web daily.
 
-- **No login, no cloud.** Everything is stored in a local SQLite file.
-- **Your AI is the suggestion engine.** The server runs your installed AI's command line in headless mode. There are no API keys in the app and no subscription to this project.
-- **Editable rules.** How the AI recommends is described in plain markdown files in [`rules/`](rules). Change them to tune the engine.
-- **Daily catalog update.** The plan is for the AI to search the web once a day for new releases and streaming availability, then add verified titles to the local database.
-- **Experimental lane.** A separate section suggests genres you have not tried. What you watch from it feeds back into your main recommendations.
-- **Works from chat.** Open the project in any AI agent and ask it to "refresh" or "find new content". [`AGENTS.md`](AGENTS.md) tells agents how.
-- **"Watch on" links** open the right platform for each title.
+- **Your AI is meant to be the suggestion engine.** The server will run your installed AI's command line in headless mode. No API keys in the app, no subscription to this project. This part is not built yet.
+- **Editable rules.** How the AI should recommend is described in plain markdown files in [`rules/`](rules).
+- **Works from chat.** Open the project in any AI agent and ask it to set things up. [`AGENTS.md`](AGENTS.md) tells agents how.
 
 ## What works today
 
 | Area | Status |
 |---|---|
-| Animated intro (film-leader countdown, curtains) | Works |
-| Onboarding: country, platforms, AI choice, taste, watch history | Works, saved locally |
-| Detects installed AI CLIs (Claude, Codex, Cursor, Gemini) | Works |
-| Local SQLite database and schema | Works (only the profile table is used so far) |
-| Real catalog from TMDB: titles, posters, backdrops, ratings, streaming availability for your country and your platforms | Works (needs a free TMDB key). Falls back to sample titles without one. |
-| Dashboard: banner, rows, explore, experimental, My List, title details | Works |
-| "Watch on" buttons | Work. Some platforms open that platform's own search, others open a web search. A "All ways to watch" link opens TMDB's page for the title. |
-| Mobile and desktop layouts | Work |
-| `npm run refresh` (updates the catalog, adding new titles and refreshing availability) | Works |
-| Recommendation scores and rows | Placeholder: simple genre matching, not AI |
-| AI suggestion engine | **Not built** (the AI is never called yet) |
-| Daily automatic refresh and catch-up on open | **Not built** (refresh is manual or runs at the end of onboarding) |
-| CLI commands `find-new`, `log-watched`, `recommend` | **Not built** (`status` and `refresh` work) |
-| Matching pasted watch history to titles | **Not built** (stored as raw text) |
-| Chat/MCP access | **Not built** |
+| Animated intro and a six-step onboarding (country, platforms, AI choice, taste, history) | Works |
+| Real catalog from TMDB: titles, posters, backdrops, ratings, streaming availability for your country and platforms | Works (needs a free TMDB key; falls back to sample titles without one) |
+| Home, Explore, Experimental lane, My List, Watched | Works |
+| Title pages with trailer, cast, details, where to watch, similar titles | Works |
+| "Watched already" with rating, hiding, learning and similar-title discovery | Works |
+| Home-theater trailer player with ambient lighting; wide-screen variant | Works |
+| Intermission with stories, numbers and moments, opened by a button or after idle time | Works |
+| Scheduled jobs, Schedules panel, alerts, usage-based taste, backups, health check | Works |
+| `npm run refresh`, `npm run jobs`, `npm run status` | Works |
+| Mobile and desktop layouts | Works |
+| Recommendation scores | Simple taste score, not AI |
+| AI suggestion engine (Claude Code, Codex, Cursor Agent, Gemini) | **Not built** (the tools are detected, never called) |
+| Watch history import (Netflix, Amazon, Letterboxd, Trakt) | **Not built** (pasted titles are stored as raw text) |
+| Chat and MCP control, `find-new` command shortcut | **Not built** (run the job with `npm run jobs -- run find-new`) |
+| New-episode tracking | **Not built** |
 
 ## Quick start
 
-Requires **Node.js 22.9 or newer** (the app uses Node's built-in SQLite) and a **free TMDB key**.
+Requires **Node.js 22.9 or newer** and a **free TMDB key**.
+
+### The easy way: ask your AI
+
+Paste this into Claude Code, Codex, Cursor, Gemini CLI or any AI coding tool:
+
+```text
+Clone https://github.com/sumitgangwar127/Watchwise, read AGENTS.md, then install it and start it. When you need my TMDB token, ask me for it (it's free at themoviedb.org/settings/api) and put it in .env. Then open http://localhost:5173 and tell me when it's ready.
+```
+
+### Or by hand
 
 ```bash
 git clone https://github.com/sumitgangwar127/Watchwise.git
@@ -70,13 +159,7 @@ npm start
 
 Without a key the app still runs, but shows a small set of sample titles.
 
-**Or let your AI do it.** Open a terminal in any folder and tell your AI agent:
-
-> Clone https://github.com/sumitgangwar127/Watchwise and follow AGENTS.md to set it up and start it.
-
 ### First run
-
-The first time you open the app, a short onboarding sets everything up. There is no login.
 
 <p align="center">
   <img src="docs/onboarding.svg" alt="The six onboarding steps: welcome, country, platforms, your AI, taste and watch history." width="100%">
@@ -91,25 +174,27 @@ The first time you open the app, a short onboarding sets everything up. There is
 ```bash
 npm run status     # onboarding state, TMDB configured?, row counts, AI command lines found
 npm run refresh    # update the catalog from TMDB for your country and platforms
+npm run jobs       # list the scheduled jobs (add: -- run <id>, or -- run-due)
 ```
-
-`refresh` is incremental: it adds new titles, updates existing ones and records platforms a title has left.
 
 ### Troubleshooting
 
 - **"Refresh failed: fetch failed"**: Check your internet connection and that `TMDB_ACCESS_TOKEN` is set in `.env`. The app talks to TMDB over HTTP/2 because some networks reset plain HTTP/1.1 connections to TMDB's API.
 - **"TMDB is not configured"**: `.env` is missing or the token is empty. Restart `npm start` after editing `.env`.
 - **Titles missing for one of your platforms**: TMDB's availability data can lag or be incomplete for some regional services.
+- **A job says "Skipped"**: it needs onboarding finished or a TMDB token. Fix that and press Run now in Schedules.
 
 ## Project layout
 
 ```
-client/   React + Vite + Tailwind + Framer Motion web app
-server/   Hono API, SQLite schema (schema.sql), AI provider registry
-cli/      command line used by the UI, the daily job and chat
-rules/    suggestion engine rules in plain markdown
-data/     your local database (git-ignored)
-AGENTS.md instructions for AI agents (CLAUDE.md points to it)
+client/    React + Vite + Tailwind + Framer Motion web app
+server/    Hono API, SQLite schema (schema.sql), TMDB client, catalog, scheduler (jobs.js), taste, alerts
+cli/       command line used by the UI, the jobs and chat
+rules/     suggestion engine rules in plain markdown
+docs/      README images, screenshots and the intro video
+data/      your local database and backups (git-ignored)
+AGENTS.md  instructions for AI agents (CLAUDE.md points to it)
+ROADMAP.md the plan
 ```
 
 ## Supported AI tools
@@ -127,19 +212,21 @@ Adding another is a small change in [`server/providers/index.js`](server/provide
 
 ## Privacy
 
-- Your profile, history and ratings are stored only in `data/watchwise.db` on your computer.
+- Your profile, history, ratings and usage events are stored only in `data/watchwise.db` on your computer.
 - Nothing is sent to this project.
+- To find titles for you, the app sends TMDB your country, your chosen platforms and your chosen genres. It does not send your watch history, favorites or usage events.
+- Trailers load from YouTube only when you press play, through YouTube's privacy-enhanced domain.
 - When the AI features arrive, your chosen AI tool will receive the data it needs to make recommendations, under that tool's own terms.
 
 ## Roadmap
 
 The full, tickable plan is in [ROADMAP.md](ROADMAP.md). In short:
 
-1. AI suggestion engine and daily refresh (the core promise, not built yet).
+1. AI suggestion engine (the core promise, not built yet).
 2. Watch history import (paste, Netflix, Amazon, Letterboxd, Trakt).
-3. One-command install, a license and screenshots.
+3. One-command install and a license.
 4. Chat and MCP control.
-5. Watch together, alerts and series tracking.
+5. Watch together, series tracking and more.
 
 ## Data and credits
 
@@ -147,7 +234,7 @@ Movie and show data, posters and streaming availability come from [TMDB](https:/
 
 > This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-TMDB's free tier is for non-commercial use. Watchwise sends TMDB your country and platform choices (and your chosen genres) to find what is available to you. It does not send your watch history or favorites.
+TMDB's free tier is for non-commercial use. Trailers are played from YouTube.
 
 ## Contributing
 
