@@ -1,0 +1,28 @@
+{
+  "name": "watchwise",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first, AI-powered movie & show recommendations across all your streaming platforms",
+  "type": "module",
+  "bin": {
+    "watchwise": "cli/watchwise.js"
+  },
+  "scripts": {
+    "postinstall": "npm --prefix client install",
+    "dev": "concurrently -k -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "node --watch server/index.js",
+    "dev:client": "npm --prefix client run dev",
+    "start": "npm run dev",
+    "status": "node cli/watchwise.js status"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.8",
+    "hono": "^4.13.18"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}
