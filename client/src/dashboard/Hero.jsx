@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, Info } from "lucide-react";
+import { ExternalLink, Info, Star } from "lucide-react";
 import { watchUrl } from "../data.js";
 import Bulbs from "../components/Bulbs.jsx";
 import Poster from "../components/Poster.jsx";
@@ -36,6 +36,16 @@ export default function Hero({ items, mine, onOpen }) {
               background: `radial-gradient(ellipse at 72% 30%, ${t.palette[0]}d0, transparent 62%), linear-gradient(120deg, ${t.palette[1]}, #08060a 88%)`,
             }}
           />
+          {t.backdrop && (
+            <>
+              <img
+                src={t.backdrop}
+                alt=""
+                className="absolute inset-0 size-full animate-kenburns object-cover object-top opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-transparent md:via-ink/55" />
+            </>
+          )}
           <div className="absolute right-[7%] top-1/2 hidden w-[250px] -translate-y-[44%] animate-float md:block lg:w-[300px]">
             <Poster t={t} className="shadow-[0_40px_90px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/20" />
           </div>
@@ -45,6 +55,11 @@ export default function Hero({ items, mine, onOpen }) {
               <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.25em]">
                 <span className="rounded border border-accent/60 px-2 py-0.5 text-accent">Now showing</span>
                 <span className="text-emerald-300">{t.match}% match</span>
+                {t.rating > 0 && (
+                  <span className="flex items-center gap-1 text-white/70">
+                    <Star size={12} className="fill-accent text-accent" /> {t.rating.toFixed(1)}
+                  </span>
+                )}
               </div>
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
@@ -57,7 +72,7 @@ export default function Hero({ items, mine, onOpen }) {
               <p className="mt-3 text-sm text-white/65">
                 {t.year} · {t.type === "movie" ? "Film" : "Series"} · {t.genres.join(" · ")}
               </p>
-              <p className="mt-3 max-w-md text-base text-white/80">{t.blurb}</p>
+              <p className="mt-3 line-clamp-3 max-w-md text-base text-white/80">{t.blurb}</p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <a
                   href={watchUrl(primary, t.title)}

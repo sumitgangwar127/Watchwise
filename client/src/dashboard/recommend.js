@@ -1,5 +1,5 @@
-import { DEMO } from "../demo.js";
 import { platformById } from "../data.js";
+import { isRecent, paletteFor } from "./palette.js";
 
 const hash = (s) => [...s].reduce((a, c) => a + c.charCodeAt(0), 0);
 
@@ -18,17 +18,25 @@ export function watchOptions(t, mine) {
   };
 }
 
-export function buildModel(profile) {
+/** `items` is the live catalog from the API, or the sample titles when there is no catalog yet. */
+export function buildModel(profile, items) {
   const country = profile.country;
   const mine = profile.platforms ?? [];
   const genres = profile.genres ?? [];
 
-  const inRegion = DEMO.filter((t) => !t.regions || t.regions.includes(country));
+  const inRegion = items.filter((t) => !t.regions || t.regions.includes(country));
   let pool = inRegion.filter((t) => t.platforms.some((p) => mine.includes(p)));
   if (pool.length < 8) pool = inRegion;
-  pool = pool.map((t) => ({ ...t, match: matchScore(t, genres) }));
+  pool = pool.map((t) => ({
+    ...t,
+    palette: t.palette ?? paletteFor(t.id),
+    new: t.new ?? isRecent(t.released),
+    match: matchScore(t, genres),
+  }));
 
   const byMatch = [...pool].sort((a, b) => b.match - a.match);
+  // Prefer titles with wide backdrop art for the banner
+  const heroPool = byMatch.filter((t) => t.backdrop);
   const overlaps = (t) => t.genres.some((g) => genres.includes(g));
 
   const genreRows = genres
@@ -42,7 +50,7 @@ export function buildModel(profile) {
     mine,
     genres,
     pool,
-    hero: byMatch.slice(0, 5),
+    hero: (heroPool.length >= 3 ? heroPool : byMatch).slice(0, 5),
     forYou: byMatch.slice(0, 14),
     genreRows,
     trending: [...pool].sort((a, b) => (hash(a.id) % 11) - (hash(b.id) % 11)).slice(0, 14),

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bookmark, Compass, Home, Info, RotateCcw, Search, Sparkles } from "lucide-react";
+import { Bookmark, Compass, Home, Info, Loader2, RefreshCw, RotateCcw, Search, Sparkles } from "lucide-react";
 import { COUNTRIES } from "../data.js";
+import { DEMO } from "../demo.js";
 import { Chip, Glow } from "../ui.jsx";
 import Logo from "../components/Logo.jsx";
 import Hero from "./Hero.jsx";
@@ -37,7 +38,7 @@ function useSaved() {
   return [ids, toggle];
 }
 
-function Seats() {
+function Seats({ live }) {
   return (
     <div className="mt-6 overflow-hidden">
       <div className="flex justify-center gap-2 md:gap-3">
@@ -50,7 +51,12 @@ function Seats() {
         ))}
       </div>
       <div className="h-8 bg-gradient-to-b from-velvet/40 to-transparent" />
-      <p className="pb-28 pt-6 text-center text-[11px] tracking-[0.35em] text-white/30 md:pb-16">ENJOY THE SHOW</p>
+      <p className="pt-6 text-center text-[11px] tracking-[0.35em] text-white/30">ENJOY THE SHOW</p>
+      <p className="px-6 pb-28 pt-3 text-center text-[11px] leading-relaxed text-white/25 md:pb-16">
+        {live
+          ? "This product uses the TMDB API but is not endorsed or certified by TMDB."
+          : "Sample catalog shown. Add a TMDB key to see real titles and posters."}
+      </p>
     </div>
   );
 }
@@ -65,7 +71,22 @@ function Grid({ children }) {
 
 export default function Dashboard({ status, onRestart }) {
   const { profile, providers } = status;
-  const model = useMemo(() => buildModel(profile), [profile]);
+  // The live catalog from TMDB when there is one, otherwise the bundled sample titles.
+  const [catalog, setCatalog] = useState(null); // { items, sample }
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState("");
+
+  const loadCatalog = useCallback(() => {
+    return fetch("/api/catalog")
+      .then((r) => r.json())
+      .then(({ items }) => setCatalog(items.length >= 8 ? { items, sample: false } : { items: DEMO, sample: true }))
+      .catch(() => setCatalog({ items: DEMO, sample: true }));
+  }, []);
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
+
+  const model = useMemo(() => buildModel(profile, catalog?.items ?? []), [profile, catalog]);
   const [tab, setTab] = useState("home");
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState(null);
@@ -101,6 +122,32 @@ export default function Dashboard({ status, onRestart }) {
     onRestart();
   }
 
+  async function refresh() {
+    setRefreshing(true);
+    setRefreshMsg("");
+    try {
+      const res = await fetch("/api/catalog/refresh", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Refresh failed");
+      await loadCatalog();
+      setRefreshMsg(`${data.added} new, ${data.updated} updated`);
+    } catch (e) {
+      setRefreshMsg(e.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  if (!catalog) {
+    return (
+      <div className="relative grid min-h-dvh place-items-center">
+        <Glow beam={false} />
+        <Loader2 className="relative animate-spin text-accent" />
+      </div>
+    );
+  }
+  const live = !catalog.sample;
+
   return (
     <div className="relative min-h-dvh">
       <Glow beam={false} />
@@ -120,7 +167,7 @@ export default function Dashboard({ status, onRestart }) {
               <button
                 key={id}
                 onClick={() => go(id)}
-                className={`rounded-full px-4 py-2 text-sm transition ${
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition ${
                   tab === id ? "bg-white/10 text-white" : "text-white/55 hover:text-white"
                 }`}
               >
@@ -130,10 +177,17 @@ export default function Dashboard({ status, onRestart }) {
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span
-              title="Placeholder titles for design testing. The live catalog comes later."
-              className="hidden items-center gap-1.5 rounded-full border border-dashed border-accent/40 px-3 py-1 text-[11px] text-accent sm:flex"
+              title={
+                live
+                  ? "Real titles, posters and availability from TMDB for your country."
+                  : "Placeholder titles. Add a TMDB key to .env to load the real catalog."
+              }
+              className={`hidden items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] lg:flex ${
+                live ? "border-emerald-400/40 text-emerald-300" : "border-dashed border-accent/40 text-accent"
+              }`}
             >
-              <Info size={12} /> Sample catalog
+              {live ? <span className="size-1.5 rounded-full bg-emerald-400" /> : <Info size={12} />}
+              {live ? "Live · TMDB" : "Sample catalog"}
             </span>
             <label className="relative hidden md:block">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
@@ -167,6 +221,19 @@ export default function Dashboard({ status, onRestart }) {
                     <div className="mb-3">{country}</div>
                     <div className="text-white/45">AI engine</div>
                     <div className="mb-3">{provider}</div>
+                    {status.tmdb?.configured && (
+                      <div className="mb-3">
+                        <button
+                          onClick={refresh}
+                          disabled={refreshing}
+                          className="flex items-center gap-2 text-white/70 transition hover:text-white disabled:opacity-50"
+                        >
+                          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                          {refreshing ? "Refreshing catalog…" : "Refresh catalog"}
+                        </button>
+                        {refreshMsg && <div className="mt-1 text-xs text-white/40">{refreshMsg}</div>}
+                      </div>
+                    )}
                     <button
                       onClick={restart}
                       className="flex items-center gap-2 text-white/60 transition hover:text-white"
@@ -217,7 +284,7 @@ export default function Dashboard({ status, onRestart }) {
                   experimental
                 />
               </div>
-              <Seats />
+              <Seats live={live} />
             </>
           )}
 

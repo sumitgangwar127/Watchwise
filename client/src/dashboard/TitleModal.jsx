@@ -58,6 +58,9 @@ export default function TitleModal({ t, mine, genres, saved, onSave, onClose }) 
             background: `radial-gradient(ellipse at 75% 20%, ${t.palette[0]}cc, transparent 65%), linear-gradient(120deg, ${t.palette[1]}, #120d12)`,
           }}
         >
+          {t.backdrop && (
+            <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-top opacity-80" />
+          )}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-panel to-transparent" />
         </div>
 
@@ -67,6 +70,7 @@ export default function TitleModal({ t, mine, genres, saved, onSave, onClose }) 
             <h2 className="text-2xl font-black leading-tight tracking-tight md:text-4xl">{t.title}</h2>
             <p className="mt-1.5 text-sm text-white/60">
               {t.year} · {t.type === "movie" ? "Film" : "Series"} ·{" "}
+              {t.rating > 0 && <>★ {t.rating.toFixed(1)} · </>}
               <span className="text-emerald-300">{t.match}% match</span>
             </p>
           </div>
@@ -131,7 +135,17 @@ export default function TitleModal({ t, mine, genres, saved, onSave, onClose }) 
               {saved ? "In My List" : "Add to My List"}
             </button>
             <p className="max-w-[16rem] text-right text-[11px] leading-snug text-white/30">
-              Sample catalog: availability is illustrative. Links open the platform's own site.
+              {t.link ? (
+                <>
+                  <a href={t.link} target="_blank" rel="noopener noreferrer" className="underline hover:text-white/60">
+                    All ways to watch
+                  </a>{" "}
+                  · availability from TMDB.{" "}
+                </>
+              ) : (
+                "Sample title: availability is illustrative. "
+              )}
+              Platform buttons open that platform's own site.
             </p>
           </div>
         </div>

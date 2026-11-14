@@ -10,13 +10,14 @@
   "scripts": {
     "postinstall": "npm --prefix client install",
     "dev": "concurrently -k -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "node --watch server/index.js",
+    "dev:server": "node --env-file-if-exists=.env --watch server/index.js",
     "dev:client": "npm --prefix client run dev",
     "start": "npm run dev",
-    "status": "node cli/watchwise.js status"
+    "status": "node --env-file-if-exists=.env cli/watchwise.js status",
+    "refresh": "node --env-file-if-exists=.env cli/watchwise.js refresh"
   },
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.9"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.8",

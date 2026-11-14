@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS titles (
   overview    TEXT,
   genres      TEXT NOT NULL DEFAULT '[]',   -- JSON array
   poster_url  TEXT,
+  backdrop_url TEXT,
+  release_date TEXT,
+  language    TEXT,
   rating      REAL,
   trend_score REAL NOT NULL DEFAULT 0,
   first_seen  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -29,6 +32,7 @@ CREATE TABLE IF NOT EXISTS availability (
   region       TEXT NOT NULL,
   platform     TEXT NOT NULL,
   kind         TEXT NOT NULL DEFAULT 'stream',  -- stream | rent | buy
+  link         TEXT,                            -- TMDB "where to watch" page for this title and region
   last_checked TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (title_id, region, platform, kind)
 );

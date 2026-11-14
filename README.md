@@ -8,7 +8,7 @@
 
 Every streaming app recommends only from its own catalog, using only what you did on that app. Watchwise keeps a single taste profile on your own computer and uses the AI you already have (Claude Code, Codex, Gemini CLI, Cursor) to decide what you should watch next, wherever it streams.
 
-> **Status: early stage.** The app shell, onboarding and dashboard design work today, but the dashboard shows a **sample catalog** with generated posters. The real catalog and the AI suggestion engine are not built yet. See [What works today](#what-works-today).
+> **Status: early stage.** The app, onboarding, dashboard and the real TMDB catalog (posters, genres, where each title streams in your country) work today. The AI suggestion engine is **not built yet**, so the "match" scores and rows are a simple genre-based placeholder for now. See [What works today](#what-works-today).
 
 ## Why
 
@@ -40,28 +40,35 @@ In text: React app ⇄ local server and SQLite ⇄ your AI command line, which r
 | Onboarding: country, platforms, AI choice, taste, watch history | Works, saved locally |
 | Detects installed AI CLIs (Claude, Codex, Cursor, Gemini) | Works |
 | Local SQLite database and schema | Works (only the profile table is used so far) |
-| Dashboard: banner, rows, explore, experimental, My List, title details | Works with **sample titles** |
-| "Watch on" buttons | Work. Some platforms open that platform's search, others open a web search. Exact per-title links come with the real catalog. |
+| Real catalog from TMDB: titles, posters, backdrops, ratings, streaming availability for your country and your platforms | Works (needs a free TMDB key). Falls back to sample titles without one. |
+| Dashboard: banner, rows, explore, experimental, My List, title details | Works |
+| "Watch on" buttons | Work. Some platforms open that platform's own search, others open a web search. A "All ways to watch" link opens TMDB's page for the title. |
 | Mobile and desktop layouts | Work |
-| Real catalog and real posters (TMDB) | **Not built** |
+| `npm run refresh` (updates the catalog, adding new titles and refreshing availability) | Works |
+| Recommendation scores and rows | Placeholder: simple genre matching, not AI |
 | AI suggestion engine | **Not built** (the AI is never called yet) |
-| Daily refresh and catch-up on open | **Not built** |
-| CLI commands `refresh`, `find-new`, `log-watched`, `recommend` | **Not built** (`status` works) |
+| Daily automatic refresh and catch-up on open | **Not built** (refresh is manual or runs at the end of onboarding) |
+| CLI commands `find-new`, `log-watched`, `recommend` | **Not built** (`status` and `refresh` work) |
 | Matching pasted watch history to titles | **Not built** (stored as raw text) |
 | Chat/MCP access | **Not built** |
 
 ## Quick start
 
-Requires **Node.js 22.5 or newer** (the app uses Node's built-in SQLite).
+Requires **Node.js 22.9 or newer** (the app uses Node's built-in SQLite) and a **free TMDB key**.
 
 ```bash
 git clone https://github.com/sumitgangwar127/Watchwise.git
 cd Watchwise
 npm install
+cp .env.example .env     # then paste your TMDB token into .env
 npm start
 ```
 
-Then open http://localhost:5173.
+1. Create a free TMDB account and request an API key at https://www.themoviedb.org/settings/api.
+2. Put the **API Read Access Token** (the long one) in `.env` as `TMDB_ACCESS_TOKEN`. `.env` is git-ignored and never leaves your computer.
+3. Open http://localhost:5173 and complete onboarding. The first catalog build takes about 30 seconds.
+
+Without a key the app still runs, but shows a small set of sample titles.
 
 **Or let your AI do it.** Open a terminal in any folder and tell your AI agent:
 
@@ -79,13 +86,20 @@ The first time you open the app, a short onboarding sets everything up. There is
 
 `npm start` also serves the web app on your local network. Find your computer's local address and open `http://<that-address>:5173` on a phone on the same Wi-Fi. Only the web app is exposed. The API listens on `127.0.0.1` only and is reached through the web app's proxy.
 
-### Check your setup
+### Commands
 
 ```bash
-npm run status
+npm run status     # onboarding state, TMDB configured?, row counts, AI command lines found
+npm run refresh    # update the catalog from TMDB for your country and platforms
 ```
 
-Shows whether you have finished onboarding, row counts, and which AI command lines were found.
+`refresh` is incremental: it adds new titles, updates existing ones and records platforms a title has left.
+
+### Troubleshooting
+
+- **"Refresh failed: fetch failed"**: Check your internet connection and that `TMDB_ACCESS_TOKEN` is set in `.env`. The app talks to TMDB over HTTP/2 because some networks reset plain HTTP/1.1 connections to TMDB's API.
+- **"TMDB is not configured"**: `.env` is missing or the token is empty. Restart `npm start` after editing `.env`.
+- **Titles missing for one of your platforms**: TMDB's availability data can lag or be incomplete for some regional services.
 
 ## Project layout
 
@@ -119,9 +133,9 @@ Adding another is a small change in [`server/providers/index.js`](server/provide
 
 ## Roadmap
 
-1. Connect TMDB for real titles, posters and streaming availability.
-2. `refresh` and `find-new` commands, plus the daily update with catch-up on open.
-3. AI suggestion engine driven by the rules files, with checks so only real titles are added.
+1. ~~Connect TMDB for real titles, posters and streaming availability.~~ Done.
+2. Daily automatic update with catch-up on open, and a `find-new` command.
+3. AI suggestion engine driven by the rules files, with checks so only real TMDB titles are used.
 4. Watch history import (paste, CSV exports) matched to real titles.
 5. Experimental lane feedback loop.
 6. Chat/MCP access.
@@ -129,11 +143,11 @@ Adding another is a small change in [`server/providers/index.js`](server/provide
 
 ## Data and credits
 
-Movie and show data will come from [TMDB](https://www.themoviedb.org). Each person should use their own free TMDB key, kept in a local `.env` file that is never committed.
+Movie and show data, posters and streaming availability come from [TMDB](https://www.themoviedb.org). Each person uses their own free TMDB key, kept in a local `.env` file that is never committed.
 
-> This product will use the TMDB API but is not endorsed or certified by TMDB.
+> This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-TMDB's free tier is for non-commercial use.
+TMDB's free tier is for non-commercial use. Watchwise sends TMDB your country and platform choices (and your chosen genres) to find what is available to you. It does not send your watch history or favorites.
 
 ## Contributing
 

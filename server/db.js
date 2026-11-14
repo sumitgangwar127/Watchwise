@@ -12,6 +12,16 @@ export const db = new DatabaseSync(join(dataDir, "watchwise.db"));
 db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
 db.exec(readFileSync(join(here, "schema.sql"), "utf8"));
 
+// Lightweight migrations for databases created before these columns existed.
+function ensureColumn(table, column, ddl) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+}
+ensureColumn("titles", "backdrop_url", "TEXT");
+ensureColumn("titles", "release_date", "TEXT");
+ensureColumn("titles", "language", "TEXT");
+ensureColumn("availability", "link", "TEXT");
+
 export function getProfile() {
   const rows = db.prepare("SELECT key, value FROM profile").all();
   return Object.fromEntries(rows.map((r) => [r.key, JSON.parse(r.value)]));
