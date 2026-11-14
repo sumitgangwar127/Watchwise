@@ -285,14 +285,6 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
                   Where to watch
                 </a>
               )}
-              {t.trailer && (
-                <button
-                  onClick={openTrailer}
-                  className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-medium backdrop-blur transition hover:bg-white/20"
-                >
-                  <Play size={16} className="fill-white" /> Play trailer
-                </button>
-              )}
               <button
                 onClick={toggleWatched}
                 disabled={busy}
