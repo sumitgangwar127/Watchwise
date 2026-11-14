@@ -40,6 +40,26 @@ function useIntermissionSetting() {
   return { minutes, set };
 }
 
+// Which trailer player to use: "showtime" (curtains, the original) or "theater" (wide screen + room, experimental)
+function usePlayerStyle() {
+  const [style, setStyle] = useState(() => {
+    try {
+      return localStorage.getItem("ww_player") === "theater" ? "theater" : "showtime";
+    } catch {
+      return "showtime";
+    }
+  });
+  const set = useCallback((v) => {
+    setStyle(v);
+    try {
+      localStorage.setItem("ww_player", v);
+    } catch {
+      /* storage unavailable: lasts until reload */
+    }
+  }, []);
+  return { style, set };
+}
+
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export default function App() {
@@ -55,6 +75,7 @@ export default function App() {
   const catalogApi = useCatalog(onboarded);
   const saved = useSaved();
   const intermission = useIntermissionSetting();
+  const playerStyle = usePlayerStyle();
   const hist = useHistory(onboarded, { onLearned: catalogApi.reload });
 
   const finishIntro = useCallback(() => {
@@ -105,6 +126,7 @@ export default function App() {
             hist={hist}
             catalogApi={catalogApi}
             intermission={intermission}
+            playerStyle={playerStyle}
             onOpenTitle={(id) => navigate(titlePath(id))}
             onRestart={() => {
               setStatus(null);
@@ -122,6 +144,7 @@ export default function App() {
             hist={hist}
             navigate={navigate}
             back={back}
+            playerStyle={playerStyle.style}
           />
         )}
       </>

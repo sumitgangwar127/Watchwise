@@ -14,6 +14,7 @@ import { COUNTRIES, platformById, watchUrl } from "../data.js";
 import { byId } from "../demo.js";
 import Ambient from "../components/Ambient.jsx";
 import { useDominantColors } from "../colors.js";
+import TheaterPlayer from "../components/TheaterPlayer.jsx";
 import TrailerPlayer from "../components/TrailerPlayer.jsx";
 import { Glow } from "../ui.jsx";
 import { Row } from "./Row.jsx";
@@ -47,7 +48,7 @@ function Stars({ value, onRate }) {
 }
 
 /** A full page for one movie or show: trailer, details, cast, where to watch, similar titles. */
-export default function TitlePage({ id, status, saved, hist, navigate, back }) {
+export default function TitlePage({ id, status, saved, hist, navigate, back, playerStyle = "showtime" }) {
   const { profile } = status;
   const mine = profile.platforms ?? [];
   const m = /^(movie|tv)-(\d+)$/.exec(id);
@@ -358,17 +359,18 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
 
       {/* Cinema trailer player: grows out of the "Play trailer" button and loads YouTube only when opened */}
       <AnimatePresence>
-        {trailerFrom && t.trailer && (
-          <TrailerPlayer
-            key="trailer"
-            trailer={t.trailer}
-            title={t.title}
-            backdrop={t.backdrop}
-            from={trailerFrom}
-            cta={primary ? { label: `Watch on ${primary.name}`, href: watchUrl(primary, t.title), color: primary.color } : null}
-            onClose={() => setTrailerFrom(null)}
-          />
-        )}
+        {trailerFrom && t.trailer && (() => {
+          const props = {
+            key: "trailer",
+            trailer: t.trailer,
+            title: t.title,
+            backdrop: t.backdrop,
+            from: trailerFrom,
+            cta: primary ? { label: `Watch on ${primary.name}`, href: watchUrl(primary, t.title), color: primary.color } : null,
+            onClose: () => setTrailerFrom(null),
+          };
+          return playerStyle === "theater" ? <TheaterPlayer {...props} stills={t.stills ?? []} /> : <TrailerPlayer {...props} />;
+        })()}
       </AnimatePresence>
 
       {/* Details */}

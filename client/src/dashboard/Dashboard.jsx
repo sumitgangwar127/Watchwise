@@ -61,7 +61,7 @@ function Grid({ children }) {
   );
 }
 
-export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi, intermission }) {
+export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi, intermission, playerStyle }) {
   const { profile, providers } = status;
   const { catalog, refresh, refreshing, message: refreshMsg } = catalogApi;
 
@@ -224,6 +224,17 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
                     <div className="mb-3">{provider}</div>
                     <div className="text-white/45">Watched</div>
                     <div className="mb-3">{watchedList.length} titles shaping your picks</div>
+                    <label className="mb-3 block">
+                      <span className="text-white/45">Trailer player</span>
+                      <select
+                        value={playerStyle.style}
+                        onChange={(e) => playerStyle.set(e.target.value)}
+                        className="mt-1 block w-full rounded-lg border border-edge bg-ink px-2 py-1.5 text-sm outline-none [color-scheme:dark] focus:border-accent"
+                      >
+                        <option value="showtime">Showtime (curtains)</option>
+                        <option value="theater">Theater (experimental)</option>
+                      </select>
+                    </label>
                     <label className="mb-3 block">
                       <span className="text-white/45">Intermission after</span>
                       <select

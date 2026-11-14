@@ -96,3 +96,78 @@ export function useDominantColors(src, fallback) {
 
   return colors;
 }
+
+
+// ---------------------------------------------------------------------------
+// Ambient timeline: glow colors that follow a video's playhead.
+// The video itself can't be read (it's a cross-origin player), so colors are sampled from a few
+// of its frames and stills, then blended smoothly as playback moves between them.
+// ---------------------------------------------------------------------------
+
+/** Dominant glow colors of one image. Cached. Rejects if the image can't be read. */
+export function extractFromUrl(src) {
+  if (cache.has(src)) return Promise.resolve(cache.get(src));
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const c = extract(img);
+        cache.set(src, c);
+        resolve(c);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error("image failed to load"));
+    img.src = src;
+  });
+}
+
+const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const rgbToHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+const mix = (a, b, f) => {
+  const [x, y] = [hexToRgb(a), hexToRgb(b)];
+  return rgbToHex(x.map((v, i) => v + (y[i] - v) * f));
+};
+
+/**
+ * `sets` is a list of candidate point lists in order of preference, each `[{ at: 0..1, src }]`.
+ * The first list with at least two readable images is used. `progress` is playback position 0..1.
+ * Returns two hex colors, blended between the nearest sampled points.
+ */
+export function useAmbientTimeline(sets, fallback, progress) {
+  const [frames, setFrames] = useState([]); // [{ at, colors }]
+  const key = sets.map((set) => set.map((p) => p.src).join(",")).join("|");
+
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      for (const set of sets) {
+        const results = await Promise.allSettled(set.map((p) => extractFromUrl(p.src)));
+        const ok = set
+          .map((p, i) => ({ at: p.at, colors: results[i].status === "fulfilled" ? results[i].value : null }))
+          .filter((p) => p.colors);
+        if (ok.length >= 2) {
+          if (!off) setFrames(ok.sort((a, b) => a.at - b.at));
+          return;
+        }
+      }
+      if (!off) setFrames([]);
+    })();
+    return () => {
+      off = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  if (!frames.length) return fallback;
+  const p = Math.max(0, Math.min(1, progress || 0));
+  if (p <= frames[0].at) return frames[0].colors;
+  const last = frames[frames.length - 1];
+  if (p >= last.at) return last.colors;
+  const i = frames.findIndex((f) => f.at > p);
+  const [a, b] = [frames[i - 1], frames[i]];
+  const f = (p - a.at) / (b.at - a.at);
+  return [mix(a.colors[0], b.colors[0], f), mix(a.colors[1], b.colors[1], f)];
+}
