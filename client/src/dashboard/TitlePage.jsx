@@ -349,6 +349,9 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
                   <span className="grid size-16 place-items-center rounded-full bg-black/55 ring-1 ring-white/40 backdrop-blur transition group-hover:scale-105 group-hover:bg-black/70">
                     <Play size={26} className="ml-1 fill-white" />
                   </span>
+                  <span className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-medium ring-1 ring-white/25 backdrop-blur transition group-hover:bg-black/80">
+                    <Play size={14} className="fill-white" /> Watch trailer
+                  </span>
                 </button>
               )}
             </div>
