@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
-import TheaterRoom from "./TheaterRoom.jsx";
+import TheaterRoom, { BEZEL, ScreenGlass } from "./TheaterRoom.jsx";
 import { ExternalLink, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 // The YouTube IFrame API is loaded only when a trailer is first played, so nothing
@@ -79,10 +79,10 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
     return () => window.removeEventListener("resize", on);
   }, []);
   const gutter = vp.w < 640 ? 14 : vp.w < 1024 ? 48 : 150;
-  const W = Math.round(Math.max(280, Math.min(vp.w - gutter * 2, ((vp.h - 230) * 16) / 9, 1100)));
-  const H = Math.round((W * 9) / 16);
+  const W = Math.round(Math.max(280, Math.min(vp.w - gutter * 2, ((vp.h - 270) * 16) / 9, 980)));
+  const H = Math.round(((W - BEZEL * 2) * 9) / 16) + BEZEL * 2; // the picture inside the frame stays 16:9
   const L = Math.round((vp.w - W) / 2);
-  const T = Math.max(70, Math.round((vp.h - H) / 2 - 18));
+  const T = Math.max(66, Math.round((vp.h - H) / 2 - 52));
 
   // ---- lock page scroll while open ----
   useEffect(() => {
@@ -293,7 +293,6 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
         T={T}
         W={W}
         H={H}
-        wallBottom={T + H + 70}
         spaceBelow={vp.h - (T + H + 14 + 64)}
         narrow={vp.w < 720}
         c1={c1}
@@ -335,7 +334,7 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
       {/* The screen: grows out of the button that opened it */}
       <motion.div
         ref={frameRef}
-        className="absolute overflow-hidden ring-1 ring-white/15"
+        className="absolute overflow-hidden"
         style={{ position: "absolute" }}
         initial={{ ...fromBox, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.16)", boxShadow: "0 0 0 rgba(0,0,0,0)" }}
         animate={{
@@ -343,15 +342,16 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
           left: L,
           width: W,
           height: H,
-          borderRadius: 20,
-          backgroundColor: "#000",
-          boxShadow: "0 30px 90px rgba(0,0,0,0.85)",
+          borderRadius: 18,
+          backgroundColor: "#07060a",
+          boxShadow: "0 30px 90px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.12)",
         }}
         exit={{ ...fromBox, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.16)", opacity: 0, transition: { duration: reduce ? 0.01 : 0.45, ease: [0.7, 0, 0.3, 1] } }}
         transition={spring}
       >
         <motion.div
-          className={`absolute inset-0 ${!showUi && isPlaying ? "cursor-none" : ""}`}
+          className={`absolute overflow-hidden rounded-[10px] bg-black ${!showUi && isPlaying ? "cursor-none" : ""}`}
+          style={{ inset: BEZEL }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
@@ -368,6 +368,7 @@ export default function TrailerPlayer({ trailer, title, backdrop, stills = [], f
             />
           )}
           <div ref={hostRef} className="absolute inset-0" />
+          <ScreenGlass />
 
           {/* Click anywhere on the picture to play or pause; double-click for fullscreen */}
           <button

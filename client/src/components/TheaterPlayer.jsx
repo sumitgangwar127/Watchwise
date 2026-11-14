@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
-import TheaterRoom from "./TheaterRoom.jsx";
+import TheaterRoom, { BEZEL, ScreenGlass } from "./TheaterRoom.jsx";
 import { clock, useYouTubePlayer } from "./youtube.js";
 
 const YouTubeMark = () => (
@@ -53,10 +53,14 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
   const narrow = vp.w < 720;
   const g = vp.w < 640 ? 12 : 28;
   const W = vp.w - g * 2;
-  const H = narrow ? Math.round((W * 9) / 16) : Math.max(200, Math.round(Math.min(W / 2.39, vp.h * 0.62)));
+  const H = narrow
+    ? Math.round(((W - BEZEL * 2) * 9) / 16) + BEZEL * 2
+    : Math.max(200, Math.round(Math.min(W / 2.39, vp.h * 0.62)));
   const T = narrow ? 64 : 60;
   const L = g;
-  const videoW = fit || narrow ? Math.min(W, Math.round((H * 16) / 9)) : Math.max(W, Math.round((H * 16) / 9));
+  const innerW = W - BEZEL * 2;
+  const innerH = H - BEZEL * 2;
+  const videoW = fit || narrow ? Math.min(innerW, Math.round((innerH * 16) / 9)) : Math.max(innerW, Math.round((innerH * 16) / 9));
   const videoH = Math.round((videoW * 9) / 16);
   const consoleTop = T + H + 14;
   const roomLeft = vp.h - (consoleTop + 132); // vertical space left for the seats
@@ -143,7 +147,6 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
         T={T}
         W={W}
         H={H}
-        wallBottom={consoleTop - 6}
         spaceBelow={roomLeft}
         narrow={narrow}
         c1={c1}
@@ -178,14 +181,23 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
 
       {/* ---------- The screen: grows out of the banner, spans left to right ---------- */}
       <motion.div
-        className="absolute z-10 overflow-hidden ring-1 ring-white/15"
+        className="absolute z-10 overflow-hidden"
         initial={{ ...fromBox, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.12)" }}
-        animate={{ top: T, left: L, width: W, height: H, borderRadius: 14, backgroundColor: "#000" }}
+        animate={{
+          top: T,
+          left: L,
+          width: W,
+          height: H,
+          borderRadius: 18,
+          backgroundColor: "#07060a",
+          boxShadow: "0 30px 90px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.12)",
+        }}
         exit={{ ...fromBox, opacity: 0, transition: { duration: reduce ? 0.01 : 0.4, ease: [0.7, 0, 0.3, 1] } }}
         transition={spring}
       >
         <motion.div
-          className="absolute inset-0"
+          className="absolute overflow-hidden rounded-[10px] bg-black"
+          style={{ inset: BEZEL }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
@@ -204,6 +216,7 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{ width: videoW, height: videoH }}
           />
+          <ScreenGlass />
           <button
             type="button"
             aria-label={isPlaying ? "Pause" : "Play"}
