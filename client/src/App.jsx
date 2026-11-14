@@ -76,6 +76,7 @@ export default function App() {
   const saved = useSaved();
   const intermission = useIntermissionSetting();
   const playerStyle = usePlayerStyle();
+  const [showIntermission, setShowIntermission] = useState(false); // the on-demand "screen saver"
   const hist = useHistory(onboarded, { onLearned: catalogApi.reload });
 
   const finishIntro = useCallback(() => {
@@ -127,6 +128,7 @@ export default function App() {
             catalogApi={catalogApi}
             intermission={intermission}
             playerStyle={playerStyle}
+            onIntermission={() => setShowIntermission(true)}
             onOpenTitle={(id) => navigate(titlePath(id))}
             onRestart={() => {
               setStatus(null);
@@ -165,7 +167,13 @@ export default function App() {
     <>
       <AnimatePresence>{intro && <Intro key="intro" onDone={finishIntro} />}</AnimatePresence>
       {content}
-      <Intermission items={catalogApi.catalog?.items ?? []} minutes={intermission.minutes} enabled={onboarded && !intro} />
+      <Intermission
+        items={catalogApi.catalog?.items ?? []}
+        minutes={intermission.minutes}
+        enabled={onboarded && !intro}
+        forced={showIntermission}
+        onDismiss={() => setShowIntermission(false)}
+      />
     </>
   );
 }

@@ -7,6 +7,7 @@ import {
   Home,
   Info,
   Loader2,
+  Moon,
   RefreshCw,
   RotateCcw,
   Search,
@@ -61,7 +62,7 @@ function Grid({ children }) {
   );
 }
 
-export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi, intermission, playerStyle }) {
+export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi, intermission, playerStyle, onIntermission }) {
   const { profile, providers } = status;
   const { catalog, refresh, refreshing, message: refreshMsg } = catalogApi;
 
@@ -190,6 +191,14 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
               {live ? <span className="size-1.5 rounded-full bg-emerald-400" /> : <Info size={12} />}
               {live ? "Live · TMDB" : "Sample catalog"}
             </span>
+            <button
+              onClick={onIntermission}
+              aria-label="Start intermission (screen saver)"
+              title="Intermission (screen saver)"
+              className="grid size-9 place-items-center rounded-full bg-white/[0.06] text-white/70 transition hover:bg-white/15 hover:text-white"
+            >
+              <Moon size={16} />
+            </button>
             <label className="relative hidden md:block">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
               <input
@@ -261,6 +270,15 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
                         {refreshMsg && <div className="mt-1 text-xs text-white/40">{refreshMsg}</div>}
                       </div>
                     )}
+                    <button
+                      onClick={() => {
+                        setMenu(false);
+                        onIntermission();
+                      }}
+                      className="mb-3 flex items-center gap-2 text-white/70 transition hover:text-white"
+                    >
+                      <Moon size={14} /> Start intermission now
+                    </button>
                     <button
                       onClick={restart}
                       className="flex items-center gap-2 text-white/60 transition hover:text-white"

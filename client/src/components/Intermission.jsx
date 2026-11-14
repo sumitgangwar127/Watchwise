@@ -42,8 +42,25 @@ const hash = (s) => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >
  * "Intermission": after a while with no activity the house lights go down, and a calm
  * slideshow of backdrops fades slowly with the time. Any input brings you back.
  */
-export default function Intermission({ items, minutes, enabled }) {
-  const idle = useIdle(minutes * 60000, enabled && minutes > 0);
+export default function Intermission({ items, minutes, enabled, forced = false, onDismiss }) {
+  const idleNow = useIdle(minutes * 60000, enabled && minutes > 0);
+  const idle = idleNow || forced; // opened by the timer, or on demand from the button
+
+  // When opened on demand, any input closes it. A short grace period stops the opening click from closing it at once.
+  useEffect(() => {
+    if (!forced) return;
+    let armed = false;
+    const grace = setTimeout(() => {
+      armed = true;
+    }, 1200);
+    const wake = () => armed && onDismiss?.();
+    const events = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, wake, { passive: true }));
+    return () => {
+      clearTimeout(grace);
+      events.forEach((e) => window.removeEventListener(e, wake));
+    };
+  }, [forced, onDismiss]);
 
   const slides = useMemo(
     () =>
