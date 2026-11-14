@@ -14,9 +14,7 @@ import { COUNTRIES, platformById, watchUrl } from "../data.js";
 import { byId } from "../demo.js";
 import Ambient from "../components/Ambient.jsx";
 import Letterbox from "../components/Letterbox.jsx";
-import Logo from "../components/Logo.jsx";
 import { useDominantColors } from "../colors.js";
-import Poster from "../components/Poster.jsx";
 import TrailerPlayer from "../components/TrailerPlayer.jsx";
 import { Glow } from "../ui.jsx";
 import { Row } from "./Row.jsx";
@@ -225,15 +223,11 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
           >
             <ArrowLeft size={20} />
           </button>
-          <button onClick={() => navigate("/")} aria-label="Home">
-            <Logo size={30} />
-          </button>
         </div>
-        <div className="h-[3px] bg-gradient-to-r from-transparent via-velvet to-transparent" />
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative flex min-h-dvh items-end overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
@@ -242,23 +236,14 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
         />
         {t.backdrop && (
           <>
-            <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-top opacity-70" />
-            <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/75 to-transparent" />
+            <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-center" />
+            <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/35 to-transparent" />
           </>
         )}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-ink to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
         <Letterbox bars={12} />
 
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-6 px-5 pb-12 pt-28 md:flex-row md:items-end md:gap-10 md:px-14 md:pb-16 md:pt-36">
-          <motion.div
-            initial={{ opacity: 0, y: 24, rotate: -2 }}
-            animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{ duration: 0.6 }}
-            className="w-36 shrink-0 md:w-60"
-          >
-            <Poster t={{ ...t, palette }} className="shadow-[0_40px_90px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/20" />
-          </motion.div>
-
+        <div className="relative w-full px-5 pb-14 pt-28 md:px-14 md:pb-20">
           <div className="min-w-0 max-w-2xl">
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.22em]">
               <span className="rounded border border-accent/60 px-2 py-0.5 text-accent">
