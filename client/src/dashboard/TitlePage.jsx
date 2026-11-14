@@ -369,7 +369,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back, pla
             cta: primary ? { label: `Watch on ${primary.name}`, href: watchUrl(primary, t.title), color: primary.color } : null,
             onClose: () => setTrailerFrom(null),
           };
-          return playerStyle === "theater" ? <TheaterPlayer {...props} stills={t.stills ?? []} /> : <TrailerPlayer {...props} />;
+          return playerStyle === "theater" ? <TheaterPlayer {...props} stills={t.stills ?? []} /> : <TrailerPlayer {...props} stills={t.stills ?? []} />;
         })()}
       </AnimatePresence>
 

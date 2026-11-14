@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useAmbientTimeline, useDominantColors } from "../colors.js";
+import TheaterRoom from "./TheaterRoom.jsx";
 import { ExternalLink, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 // The YouTube IFrame API is loaded only when a trailer is first played, so nothing
@@ -49,7 +51,7 @@ const YT = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3 };
  *
  * `from` is the on-screen rectangle of the button, `cta` is an optional "Watch on <platform>" action.
  */
-export default function TrailerPlayer({ trailer, title, backdrop, from, cta, onClose }) {
+export default function TrailerPlayer({ trailer, title, backdrop, stills = [], from, cta, onClose }) {
   const reduce = useReducedMotion();
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
@@ -76,8 +78,8 @@ export default function TrailerPlayer({ trailer, title, backdrop, from, cta, onC
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
   }, []);
-  const gutter = vp.w < 640 ? 14 : vp.w < 1024 ? 48 : 96;
-  const W = Math.round(Math.max(280, Math.min(vp.w - gutter * 2, ((vp.h - 190) * 16) / 9, 1200)));
+  const gutter = vp.w < 640 ? 14 : vp.w < 1024 ? 48 : 150;
+  const W = Math.round(Math.max(280, Math.min(vp.w - gutter * 2, ((vp.h - 230) * 16) / 9, 1100)));
   const H = Math.round((W * 9) / 16);
   const L = Math.round((vp.w - W) / 2);
   const T = Math.max(70, Math.round((vp.h - H) / 2 - 18));
@@ -271,42 +273,35 @@ export default function TrailerPlayer({ trailer, title, backdrop, from, cta, onC
   const ytUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
   const pct = dur ? ((scrub ?? pos) / dur) * 100 : 0;
 
+  // Room lighting follows the trailer: colours sampled from its frames (or movie stills), blended with the playhead
+  const sets = useMemo(
+    () => [
+      [1, 2, 3].map((n, i) => ({ at: (i + 1) / 4, src: `https://i.ytimg.com/vi/${trailer.key}/${n}.jpg` })),
+      stills.slice(0, 8).map((src, i, a) => ({ at: (i + 0.5) / a.length, src })),
+    ],
+    [trailer.key, stills],
+  );
+  const baseColors = useDominantColors(backdrop ?? null, ["#a8142d", "#4a0715"]);
+  const [c1, c2] = useAmbientTimeline(sets, baseColors, dur ? (scrub ?? pos) / dur : 0);
+
   return createPortal(
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={`${title} trailer`}>
-      {/* Lights down */}
-      <motion.div
-        className="absolute inset-0 bg-black"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.95 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: reduce ? 0.01 : 0.5 }}
-        onClick={onClose}
+      {/* The room: wall, speakers, seats and light that follows the trailer */}
+      <TheaterRoom
+        vp={vp}
+        L={L}
+        T={T}
+        W={W}
+        H={H}
+        wallBottom={T + H + 70}
+        spaceBelow={vp.h - (T + H + 14 + 64)}
+        narrow={vp.w < 720}
+        c1={c1}
+        c2={c2}
+        reduce={reduce}
+        variant="centered"
+        onBackdropClick={onClose}
       />
-      <motion.div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="beam absolute left-1/2 top-0 h-[90vh] w-[130vw] -translate-x-1/2 opacity-70" />
-      </motion.div>
-
-      {/* Curtains draw in from the sides */}
-      {["left", "right"].map((side) => (
-        <motion.div
-          key={side}
-          className={`velvet pointer-events-none absolute inset-y-0 w-[8vw] sm:w-[10vw] ${
-            side === "left"
-              ? "left-0 border-r-4 border-accent/30 shadow-[14px_0_50px_rgba(0,0,0,0.7)]"
-              : "right-0 border-l-4 border-accent/30 shadow-[-14px_0_50px_rgba(0,0,0,0.7)]"
-          }`}
-          initial={{ x: side === "left" ? "-100%" : "100%" }}
-          animate={{ x: "0%" }}
-          exit={{ x: side === "left" ? "-100%" : "100%" }}
-          transition={reduce ? { duration: 0.01 } : { type: "spring", stiffness: 110, damping: 20 }}
-        />
-      ))}
 
       {/* Caption */}
       <motion.div
@@ -350,7 +345,7 @@ export default function TrailerPlayer({ trailer, title, backdrop, from, cta, onC
           height: H,
           borderRadius: 20,
           backgroundColor: "#000",
-          boxShadow: "0 0 140px -10px rgba(242,196,109,0.38), 0 40px 120px rgba(0,0,0,0.85)",
+          boxShadow: "0 30px 90px rgba(0,0,0,0.85)",
         }}
         exit={{ ...fromBox, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.16)", opacity: 0, transition: { duration: reduce ? 0.01 : 0.45, ease: [0.7, 0, 0.3, 1] } }}
         transition={spring}

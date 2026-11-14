@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
+import TheaterRoom from "./TheaterRoom.jsx";
 import { clock, useYouTubePlayer } from "./youtube.js";
 
 const YouTubeMark = () => (
@@ -124,83 +125,32 @@ export default function TheaterPlayer({ trailer, title, backdrop, stills = [], f
   const delay = reduce ? 0 : 0.4;
   const ytUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
   const pct = dur ? ((scrub ?? pos) / dur) * 100 : 0;
-  const glow = "transition-colors duration-[1200ms] ease-linear"; // ambient colors drift, they never jump
 
   const iconBtn = "grid size-11 place-items-center rounded-full bg-white/10 transition hover:bg-white/20";
 
   return createPortal(
     <div
       ref={roomRef}
-      className="fixed inset-0 z-[60] overflow-hidden bg-[#050407]"
+      className="fixed inset-0 z-[60] overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label={`${title} trailer, theater view`}
     >
       {/* ---------- The room ---------- */}
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, transition: { duration: 0.25 } }}
-        transition={{ duration: reduce ? 0.01 : 0.6 }}
-      >
-        {/* Acoustic wall */}
-        <div
-          className="absolute inset-x-0 top-0"
-          style={{
-            height: consoleTop - 6,
-            background:
-              "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 26px), linear-gradient(180deg, #0d0a10, #08060a)",
-          }}
-        />
-        {/* Cove lighting along the ceiling and walls */}
-        <div className={`absolute inset-x-[6%] -top-6 h-16 rounded-full blur-2xl opacity-60 ${glow}`} style={{ backgroundColor: c1 }} />
-        <div className={`absolute inset-y-0 left-0 w-2 blur-[4px] opacity-90 ${glow}`} style={{ backgroundColor: c2 }} />
-        <div className={`absolute inset-y-0 right-0 w-2 blur-[4px] opacity-90 ${glow}`} style={{ backgroundColor: c2 }} />
-        {/* Halo around the screen */}
-        <div
-          className={`absolute rounded-[40px] blur-[80px] opacity-80 ${glow}`}
-          style={{ left: L - 30, top: T - 24, width: W + 60, height: H + 48, backgroundColor: c1 }}
-        />
-        <div
-          className={`absolute rounded-full blur-[90px] opacity-35 ${glow}`}
-          style={{ left: L + W * 0.55, top: T + H * 0.25, width: W * 0.45, height: H * 0.7, backgroundColor: c2 }}
-        />
-        {/* Light spilling onto the floor */}
-        <div className="absolute inset-x-0 bottom-0" style={{ top: consoleTop - 6, background: "linear-gradient(180deg, #0a0810, #050407 70%)" }} />
-        <div
-          className={`absolute rounded-[50%] blur-[90px] opacity-70 ${glow}`}
-          style={{ left: L + W * 0.08, top: T + H - 10, width: W * 0.84, height: 170, backgroundColor: c2 }}
-        />
-
-        {/* Speakers and seats, only when there's room for them */}
-        {!narrow && roomLeft > 110 && (
-          <>
-            {["left-4", "right-4"].map((side) => (
-              <div
-                key={side}
-                className={`absolute bottom-6 ${side} hidden w-16 rounded-2xl border border-white/10 lg:block`}
-                style={{
-                  height: Math.min(roomLeft - 20, 190),
-                  background:
-                    "radial-gradient(circle at 50% 28%, #1b171e 0 22%, transparent 23%), radial-gradient(circle at 50% 68%, #1b171e 0 30%, transparent 31%), linear-gradient(180deg, #121014, #0a080c)",
-                }}
-              >
-                <span className={`absolute left-1/2 top-2 size-1 -translate-x-1/2 rounded-full ${glow}`} style={{ backgroundColor: c1 }} />
-              </div>
-            ))}
-            <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 overflow-hidden px-24">
-              {Array.from({ length: 12 }, (_, i) => (
-                <div
-                  key={i}
-                  className="velvet h-12 w-14 shrink-0 rounded-t-2xl shadow-[inset_0_6px_10px_rgba(255,255,255,0.12)]"
-                  style={{ opacity: 0.4 + (i % 3) * 0.08 }}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </motion.div>
+      <TheaterRoom
+        vp={vp}
+        L={L}
+        T={T}
+        W={W}
+        H={H}
+        wallBottom={consoleTop - 6}
+        spaceBelow={roomLeft}
+        narrow={narrow}
+        c1={c1}
+        c2={c2}
+        reduce={reduce}
+        variant="wide"
+      />
 
       {/* ---------- Top bar ---------- */}
       <motion.div

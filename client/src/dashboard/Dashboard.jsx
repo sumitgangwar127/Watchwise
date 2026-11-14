@@ -231,8 +231,8 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
                         onChange={(e) => playerStyle.set(e.target.value)}
                         className="mt-1 block w-full rounded-lg border border-edge bg-ink px-2 py-1.5 text-sm outline-none [color-scheme:dark] focus:border-accent"
                       >
-                        <option value="showtime">Showtime (curtains)</option>
-                        <option value="theater">Theater (experimental)</option>
+                        <option value="showtime">Home theater (centered screen)</option>
+                        <option value="theater">Wide screen (experimental)</option>
                       </select>
                     </label>
                     <label className="mb-3 block">
