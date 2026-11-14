@@ -216,9 +216,9 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
           className="absolute inset-0"
           style={{ background: `radial-gradient(ellipse at 75% 15%, ${palette[0]}80, transparent 60%), linear-gradient(120deg, ${palette[1]}, #08060a 85%)` }}
         />
-        {t.backdrop && <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-center opacity-60" />}
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/80 to-ink" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/70 to-transparent" />
+        {t.backdrop && <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-top" />}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-ink/90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-ink/10 to-transparent" />
       </div>
       <Glow beam={false} />
       <Ambient colors={ambient} />
