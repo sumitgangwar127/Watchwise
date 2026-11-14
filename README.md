@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="Watchwise: your taste, every platform. Private, local, free." width="100%">
+</p>
+
 # Watchwise
 
 **One taste profile across every streaming platform. Private, local and free.**
@@ -14,12 +18,11 @@ Every streaming app recommends only from its own catalog, using only what you di
 
 ## How it is meant to work
 
-```
-React app  ⇄  local server  ⇄  SQLite (your data stays on your machine)
-                  │
-                  └─ AI command line (Claude / Codex / Cursor / Gemini)
-                       reads rules/*.md + your data, searches the web daily
-```
+<p align="center">
+  <img src="docs/how-it-works.svg" alt="Diagram: the Watchwise app talks to a local server and SQLite database, which talks to your AI command line. Built parts are solid, planned parts are dashed." width="100%">
+</p>
+
+In text: React app ⇄ local server and SQLite ⇄ your AI command line, which reads `rules/*.md` plus your data and, once built, searches the web daily.
 
 - **No login, no cloud.** Everything is stored in a local SQLite file.
 - **Your AI is the suggestion engine.** The server runs your installed AI's command line in headless mode. There are no API keys in the app and no subscription to this project.
@@ -63,6 +66,14 @@ Then open http://localhost:5173.
 **Or let your AI do it.** Open a terminal in any folder and tell your AI agent:
 
 > Clone https://github.com/sumitgangwar127/Watchwise and follow AGENTS.md to set it up and start it.
+
+### First run
+
+The first time you open the app, a short onboarding sets everything up. There is no login.
+
+<p align="center">
+  <img src="docs/onboarding.svg" alt="The six onboarding steps: welcome, country, platforms, your AI, taste and watch history." width="100%">
+</p>
 
 ### Open it on your phone
 
