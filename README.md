@@ -133,13 +133,13 @@ Adding another is a small change in [`server/providers/index.js`](server/provide
 
 ## Roadmap
 
-1. ~~Connect TMDB for real titles, posters and streaming availability.~~ Done.
-2. Daily automatic update with catch-up on open, and a `find-new` command.
-3. AI suggestion engine driven by the rules files, with checks so only real TMDB titles are used.
-4. Watch history import (paste, CSV exports) matched to real titles.
-5. Experimental lane feedback loop.
-6. Chat/MCP access.
-7. One-command install.
+The full, tickable plan is in [ROADMAP.md](ROADMAP.md). In short:
+
+1. AI suggestion engine and daily refresh (the core promise, not built yet).
+2. Watch history import (paste, Netflix, Amazon, Letterboxd, Trakt).
+3. One-command install, a license and screenshots.
+4. Chat and MCP control.
+5. Watch together, alerts and series tracking.
 
 ## Data and credits
 
