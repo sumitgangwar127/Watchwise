@@ -13,7 +13,6 @@ import {
 import { COUNTRIES, platformById, watchUrl } from "../data.js";
 import { byId } from "../demo.js";
 import Ambient from "../components/Ambient.jsx";
-import Letterbox from "../components/Letterbox.jsx";
 import { useDominantColors } from "../colors.js";
 import TrailerPlayer from "../components/TrailerPlayer.jsx";
 import { Glow } from "../ui.jsx";
@@ -211,6 +210,16 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
 
   return (
     <div className="relative min-h-dvh pb-24">
+      {/* The banner is only a backdrop: fixed behind the page while the details scroll over it */}
+      <div className="pointer-events-none fixed inset-0" aria-hidden>
+        <div
+          className="absolute inset-0"
+          style={{ background: `radial-gradient(ellipse at 75% 15%, ${palette[0]}80, transparent 60%), linear-gradient(120deg, ${palette[1]}, #08060a 85%)` }}
+        />
+        {t.backdrop && <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-center opacity-60" />}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/80 to-ink" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/70 to-transparent" />
+      </div>
       <Glow beam={false} />
       <Ambient colors={ambient} />
 
@@ -226,24 +235,9 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative flex min-h-dvh items-end overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at 75% 20%, ${palette[0]}b0, transparent 62%), linear-gradient(120deg, ${palette[1]}, #08060a 85%)`,
-          }}
-        />
-        {t.backdrop && (
-          <>
-            <img src={t.backdrop} alt="" className="absolute inset-0 size-full object-cover object-center" />
-            <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/35 to-transparent" />
-          </>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
-        <Letterbox bars={12} />
-
-        <div className="relative w-full px-5 pb-14 pt-28 md:px-14 md:pb-20">
+      {/* Title, quick facts and actions */}
+      <section className="relative">
+        <div className="relative mx-auto w-full max-w-5xl px-5 pb-4 pt-24 md:px-14 md:pt-28">
           <div className="min-w-0 max-w-2xl">
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.22em]">
               <span className="rounded border border-accent/60 px-2 py-0.5 text-accent">
@@ -260,7 +254,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
               )}
             </div>
 
-            <h1 className="text-4xl font-black leading-[1.03] tracking-tight drop-shadow-lg sm:text-6xl">{t.title}</h1>
+            <h1 className="text-3xl font-black leading-[1.05] tracking-tight drop-shadow-lg sm:text-5xl">{t.title}</h1>
             {t.tagline && <p className="mt-3 text-base italic text-white/65">{t.tagline}</p>}
             <p className="mt-3 text-sm text-white/65">
               {[t.year, runtime(t.runtime) && (t.type === "tv" ? `${runtime(t.runtime)}/ep` : runtime(t.runtime)), t.genres?.join(" · ")]
@@ -362,21 +356,28 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
       </AnimatePresence>
 
       {/* Details */}
-      <div className="relative mx-auto grid max-w-6xl gap-10 px-5 py-10 md:grid-cols-[1fr_300px] md:gap-14 md:px-14">
-        <div className="min-w-0 space-y-10">
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent/80">Overview</h2>
-            <p className="mt-3 text-base leading-relaxed text-white/80">{t.overview || "No description available."}</p>
-            {!watched && (
-              <p className="mt-4 rounded-xl border border-dashed border-accent/40 bg-accent/[0.06] px-4 py-3 text-sm text-accent">
+      <div className="relative mx-auto grid max-w-5xl gap-6 px-5 py-6 md:grid-cols-[1fr_290px] md:gap-8 md:px-14">
+        <div className="min-w-0 space-y-6">
+          {!watched && (
+            <section className="rounded-2xl border border-accent/30 bg-accent/[0.07] p-5 backdrop-blur-md md:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">Why we picked this for you</h2>
+                <span className="text-2xl font-semibold text-emerald-300">{match}%</span>
+              </div>
+              <p className="mt-3 text-white/85">
                 {overlap.length
                   ? `Because you like ${join(overlap.slice(0, 3))}.`
-                  : `Experimental pick: ${tags[0] ?? "this genre"} is outside your usual genres.`}
+                  : `An experimental pick: ${tags[0] ?? "this genre"} is outside your usual genres, so it could widen your taste.`}
               </p>
-            )}
+            </section>
+          )}
+
+          <section className="rounded-2xl border border-edge bg-panel/70 p-5 backdrop-blur-md md:p-6">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent/80">Overview</h2>
+            <p className="mt-3 text-base leading-relaxed text-white/80">{t.overview || "No description available."}</p>
           </section>
 
-          <section id="where-to-watch" className="scroll-mt-24">
+          <section id="where-to-watch" className="scroll-mt-24 rounded-2xl border border-edge bg-panel/70 p-5 backdrop-blur-md md:p-6">
             <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent/80">
               Where to watch in {country}
             </h2>
@@ -473,7 +474,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
           </section>
 
           {t.cast?.length > 0 && (
-            <section>
+            <section className="rounded-2xl border border-edge bg-panel/70 p-5 backdrop-blur-md md:p-6">
               <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent/80">Cast</h2>
               <div className="no-scrollbar -mx-5 mt-4 flex gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:px-0">
                 {t.cast.map((c) => (
@@ -503,7 +504,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
 
         <aside>
           <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-accent/80">Details</h2>
-          <dl className="mt-4 divide-y divide-edge rounded-2xl border border-edge bg-panel/60 px-4 text-sm">
+          <dl className="mt-4 divide-y divide-edge rounded-2xl border border-edge bg-panel/70 px-4 text-sm backdrop-blur-md">
             {facts.map(([k, v]) => (
               <div key={k} className="py-3">
                 <dt className="text-xs text-white/40">{k}</dt>
