@@ -1,6 +1,6 @@
 const hash = (s) => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-function hex(h, s, l) {
+export function hslToHex(h, s, l) {
   s /= 100;
   l /= 100;
   const k = (n) => (n + h / 30) % 12;
@@ -13,7 +13,7 @@ function hex(h, s, l) {
 /** Stable two-color palette for titles that have no poster art of their own. */
 export function paletteFor(id) {
   const h = hash(id) % 360;
-  return [hex(h, 70, 55), hex((h + 40) % 360, 55, 14)];
+  return [hslToHex(h, 70, 55), hslToHex((h + 40) % 360, 55, 14)];
 }
 
 /** True if a release date is within roughly the last two and a half months, or just upcoming. */

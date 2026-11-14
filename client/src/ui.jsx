@@ -29,7 +29,6 @@ export function PrimaryButton({ children, ...props }) {
       {...props}
       className="relative overflow-hidden rounded-full bg-gradient-to-r from-accent to-amber px-7 py-3 text-sm font-semibold text-ink shadow-[0_8px_30px_-8px_rgba(242,196,109,0.7)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
     >
-      <span className="pointer-events-none absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/45 to-transparent" />
       <span className="relative">{children}</span>
     </button>
   );
@@ -46,33 +45,13 @@ export function GhostButton({ children, ...props }) {
   );
 }
 
-const DUST = Array.from({ length: 14 }, (_, i) => ({
-  left: `${(i * 37) % 100}%`,
-  size: 1 + (i % 3),
-  delay: -((i * 1.9) % 18),
-  duration: 14 + (i % 5) * 3,
-}));
-
-/** Projector beam, warm room glow and floating dust. Sits behind everything. */
+/** Projector beam and warm room glow. Sits behind everything and stays still. */
 export function Glow({ beam = true }) {
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden">
       {beam && <div className="beam absolute left-1/2 top-0 h-[85vh] w-[120vw] -translate-x-1/2" />}
       <div className="absolute -bottom-40 left-1/2 size-[720px] -translate-x-1/2 rounded-full bg-velvet/25 blur-[160px]" />
       <div className="absolute -top-20 left-1/2 size-[420px] -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
-      {DUST.map((d, i) => (
-        <span
-          key={i}
-          className="absolute bottom-0 animate-dust rounded-full bg-amber-100/70"
-          style={{
-            left: d.left,
-            width: d.size,
-            height: d.size,
-            animationDelay: `${d.delay}s`,
-            animationDuration: `${d.duration}s`,
-          }}
-        />
-      ))}
     </div>
   );
 }

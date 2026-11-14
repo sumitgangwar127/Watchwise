@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import Onboarding from "./Onboarding.jsx";
 import Dashboard from "./dashboard/Dashboard.jsx";
 import TitlePage from "./dashboard/TitlePage.jsx";
+import Intermission from "./components/Intermission.jsx";
 import Intro from "./components/Intro.jsx";
 import { Glow } from "./ui.jsx";
 import { back, navigate, titlePath, usePath } from "./router.js";
@@ -18,6 +19,27 @@ const introSeen = () => {
     return false;
   }
 };
+// How long the app can sit idle before Intermission dims the house lights (0 = never)
+function useIntermissionSetting() {
+  const [minutes, setMinutes] = useState(() => {
+    try {
+      const v = localStorage.getItem("ww_intermission");
+      return v === null ? 3 : Number(v);
+    } catch {
+      return 3;
+    }
+  });
+  const set = useCallback((m) => {
+    setMinutes(m);
+    try {
+      localStorage.setItem("ww_intermission", String(m));
+    } catch {
+      /* storage unavailable: setting lasts until reload */
+    }
+  }, []);
+  return { minutes, set };
+}
+
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export default function App() {
@@ -32,6 +54,7 @@ export default function App() {
   const onboarded = Boolean(status?.onboarded);
   const catalogApi = useCatalog(onboarded);
   const saved = useSaved();
+  const intermission = useIntermissionSetting();
   const hist = useHistory(onboarded, { onLearned: catalogApi.reload });
 
   const finishIntro = useCallback(() => {
@@ -41,6 +64,7 @@ export default function App() {
       /* storage unavailable: intro may replay on reload */
     }
     setIntro(false);
+    window.dispatchEvent(new Event("ww:intro-done")); // lets the banner bars start sliding away
   }, []);
 
   const load = useCallback(() => {
@@ -80,6 +104,7 @@ export default function App() {
             saved={saved}
             hist={hist}
             catalogApi={catalogApi}
+            intermission={intermission}
             onOpenTitle={(id) => navigate(titlePath(id))}
             onRestart={() => {
               setStatus(null);
@@ -117,6 +142,7 @@ export default function App() {
     <>
       <AnimatePresence>{intro && <Intro key="intro" onDone={finishIntro} />}</AnimatePresence>
       {content}
+      <Intermission items={catalogApi.catalog?.items ?? []} minutes={intermission.minutes} enabled={onboarded && !intro} />
     </>
   );
 }

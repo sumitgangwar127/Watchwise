@@ -86,8 +86,10 @@ export default function TrailerPlayer({ trailer, title, backdrop, from, cta, onC
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.dataset.media = "trailer"; // Intermission never starts while a trailer is open
     return () => {
       document.body.style.overflow = prev;
+      delete document.body.dataset.media;
     };
   }, []);
 

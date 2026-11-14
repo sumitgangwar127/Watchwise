@@ -135,7 +135,7 @@ export default function Onboarding({ providers, onComplete }) {
 
   return (
     <div className="relative flex min-h-dvh flex-col lg:flex-row">
-      <Backdrop className="opacity-[0.1]" />
+      <Backdrop className="opacity-[0.1]" still />
       <Glow />
 
       {/* Desktop side rail */}

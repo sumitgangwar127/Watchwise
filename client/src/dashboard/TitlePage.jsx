@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { COUNTRIES, platformById, watchUrl } from "../data.js";
 import { byId } from "../demo.js";
+import Ambient from "../components/Ambient.jsx";
+import Letterbox from "../components/Letterbox.jsx";
 import Logo from "../components/Logo.jsx";
+import { useDominantColors } from "../colors.js";
 import Poster from "../components/Poster.jsx";
 import TrailerPlayer from "../components/TrailerPlayer.jsx";
 import { Glow } from "../ui.jsx";
@@ -108,6 +111,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
   const entry = hist.get(id);
   const watched = entry?.status === "watched";
   const country = COUNTRIES.find(([c]) => c === profile.country)?.[1] ?? profile.country;
+  const ambient = useDominantColors(t?.poster ?? null, paletteFor(id));
 
   // ---- loading / error states ----
   if (!t) {
@@ -210,6 +214,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
   return (
     <div className="relative min-h-dvh pb-24">
       <Glow beam={false} />
+      <Ambient colors={ambient} />
 
       <header className="fixed inset-x-0 top-0 z-30 bg-gradient-to-b from-black/85 to-transparent">
         <div className="flex items-center gap-4 px-5 py-3.5 md:px-14">
@@ -242,6 +247,7 @@ export default function TitlePage({ id, status, saved, hist, navigate, back }) {
           </>
         )}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-ink to-transparent" />
+        <Letterbox bars={12} />
 
         <div className="relative mx-auto flex max-w-6xl flex-col gap-6 px-5 pb-12 pt-28 md:flex-row md:items-end md:gap-10 md:px-14 md:pb-16 md:pt-36">
           <motion.div

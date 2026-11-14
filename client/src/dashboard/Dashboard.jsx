@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import { COUNTRIES } from "../data.js";
 import { Chip, Glow } from "../ui.jsx";
+import Ambient from "../components/Ambient.jsx";
 import Logo from "../components/Logo.jsx";
+import { useDominantColors } from "../colors.js";
 import Hero from "./Hero.jsx";
 import { Card, Row } from "./Row.jsx";
 import { paletteFor } from "./palette.js";
@@ -59,7 +61,7 @@ function Grid({ children }) {
   );
 }
 
-export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi }) {
+export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist, catalogApi, intermission }) {
   const { profile, providers } = status;
   const { catalog, refresh, refreshing, message: refreshMsg } = catalogApi;
 
@@ -74,6 +76,9 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
   const [menu, setMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [toast, setToast] = useState("");
+  const [heroItem, setHeroItem] = useState(null);
+  // Bias lighting takes its colors from the featured poster
+  const ambient = useDominantColors(heroItem?.poster ?? null, heroItem?.palette ?? ["#a8142d", "#4a0715"]);
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 24);
@@ -146,6 +151,7 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
   return (
     <div className="relative min-h-dvh">
       <Glow beam={false} />
+      <Ambient colors={ambient} strength={tab === "home" ? 1 : 0.5} />
 
       {/* Header */}
       <header
@@ -218,6 +224,19 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
                     <div className="mb-3">{provider}</div>
                     <div className="text-white/45">Watched</div>
                     <div className="mb-3">{watchedList.length} titles shaping your picks</div>
+                    <label className="mb-3 block">
+                      <span className="text-white/45">Intermission after</span>
+                      <select
+                        value={intermission.minutes}
+                        onChange={(e) => intermission.set(Number(e.target.value))}
+                        className="mt-1 block w-full rounded-lg border border-edge bg-ink px-2 py-1.5 text-sm outline-none [color-scheme:dark] focus:border-accent"
+                      >
+                        <option value={0}>Never</option>
+                        <option value={1}>1 minute idle</option>
+                        <option value={3}>3 minutes idle</option>
+                        <option value={10}>10 minutes idle</option>
+                      </select>
+                    </label>
                     {status.tmdb?.configured && (
                       <div className="mb-3">
                         <button
@@ -257,7 +276,7 @@ export default function Dashboard({ status, onRestart, onOpenTitle, saved, hist,
         >
           {tab === "home" && (
             <>
-              <Hero items={model.hero} mine={mine} onOpen={openTitle} onWatched={markWatched} />
+              <Hero items={model.hero} mine={mine} onOpen={openTitle} onWatched={markWatched} onSlide={setHeroItem} />
               <div className="relative -mt-10 space-y-2">
                 <Row kicker="Now showing" title="Picked for you" items={model.forYou} mine={mine} onOpen={openTitle} />
                 {model.genreRows.map((r) => (
