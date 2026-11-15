@@ -4,7 +4,8 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
 import TheaterRoom, { BEZEL, ScreenGlass } from "./TheaterRoom.jsx";
-import { ExternalLink, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
+import { detectCaptions, ccPref, isTouch, saveCcPref, setCaptions, useFullscreen, useIdleCursor } from "./youtube.js";
+import { Captions, ExternalLink, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 // The YouTube IFrame API is loaded only when a trailer is first played, so nothing
 // contacts YouTube until the user asks for it.
@@ -57,6 +58,7 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
   const frameRef = useRef(null);
+  const { full, pseudo, toggle: toggleFull, isFull, exit: exitFull } = useFullscreen(frameRef);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const hideTimer = useRef(0);
@@ -70,8 +72,11 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
   const [vol, setVol] = useState(100);
   const [scrub, setScrub] = useState(null);
   const [ui, setUi] = useState(true);
-  const [full, setFull] = useState(false);
   const [error, setError] = useState("");
+  const [autoMuted, setAutoMuted] = useState(false);
+  const [stalled, setStalled] = useState(false);
+  const [ccAvail, setCcAvail] = useState(false);
+  const [ccOn, setCcOn] = useState(false);
 
   // ---- geometry: a 16:9 screen centred in the viewport, leaving room for curtains and a caption ----
   useEffect(() => {
@@ -100,6 +105,7 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
   useEffect(() => {
     let cancelled = false;
     let player;
+    const touch = isTouch();
     loadYouTubeApi()
       .then((YTApi) => {
         if (cancelled || !hostRef.current) return;
@@ -112,6 +118,7 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
           height: "100%",
           playerVars: {
             autoplay: 1,
+            mute: touch ? 1 : 0,
             controls: 0,
             disablekb: 1,
             fs: 0,
@@ -129,6 +136,10 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
               f.setAttribute("title", `${title} trailer`);
               setReady(true);
               setDur(e.target.getDuration());
+              if (touch) {
+                e.target.mute();
+                setAutoMuted(true);
+              }
               setMuted(e.target.isMuted());
               setVol(e.target.getVolume());
               e.target.playVideo();
@@ -169,18 +180,38 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
     return () => clearInterval(id);
   }, [ready]);
 
-  // ---- fullscreen state ----
+  // Once playing, find out whether captions exist; they stay off unless the viewer turned them on before
   useEffect(() => {
-    const on = () => setFull(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", on);
-    return () => document.removeEventListener("fullscreenchange", on);
-  }, []);
+    if (!started) return;
+    const p = playerRef.current;
+    let live = true;
+    detectCaptions(p).then((ok) => {
+      if (!live) return;
+      setCcAvail(ok);
+      const on = ok && ccPref();
+      setCaptions(p, on);
+      setCcOn(on);
+    });
+    return () => {
+      live = false;
+    };
+  }, [started]);
+
+  // If the browser refuses to autoplay, show the play button instead of a spinner
+  useEffect(() => {
+    if (!ready || started) return;
+    const id = setTimeout(() => setStalled(true), 2500);
+    return () => clearTimeout(id);
+  }, [ready, started]);
+  useEffect(() => {
+    if (state === YT.PLAYING) setStalled(false);
+  }, [state]);
 
   // ---- auto-hiding controls ----
   const poke = useCallback(() => {
     setUi(true);
     clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setUi(false), 2800);
+    hideTimer.current = setTimeout(() => setUi(false), 1800);
   }, []);
   useEffect(() => {
     poke();
@@ -190,7 +221,8 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
   const isPlaying = state === YT.PLAYING || state === YT.BUFFERING;
   const ended = state === YT.ENDED;
   const showUi = ui || !isPlaying || scrub !== null;
-  const loading = !error && (!ready || state === YT.BUFFERING || (state === -1 && !started));
+  useIdleCursor(isPlaying);
+  const loading = !error && (!ready || state === YT.BUFFERING || (state === -1 && !started && !stalled));
 
   // ---- actions ----
   const toggle = useCallback(() => {
@@ -221,6 +253,7 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
   const toggleMute = useCallback(() => {
     const p = playerRef.current;
     if (!p) return;
+    setAutoMuted(false);
     if (p.isMuted()) {
       p.unMute();
       setMuted(false);
@@ -238,12 +271,18 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
     if (v > 0 && p.isMuted()) {
       p.unMute();
       setMuted(false);
+      setAutoMuted(false);
     }
   };
-  const toggleFull = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else frameRef.current?.requestFullscreen?.();
-  }, []);
+  const toggleCc = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    const next = !ccOn;
+    setCaptions(p, next);
+    setCcOn(next);
+    saveCcPref(next);
+    poke();
+  }, [ccOn, poke]);
   const pauseForExit = () => playerRef.current?.pauseVideo?.();
 
   // ---- keyboard shortcuts ----
@@ -251,7 +290,8 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
     const onKey = (e) => {
       const tag = e.target?.tagName;
       if (e.key === "Escape") {
-        if (!document.fullscreenElement) onClose();
+        if (isFull()) exitFull();
+        else onClose();
         return;
       }
       if ((e.key === " " || e.key === "Enter") && (tag === "BUTTON" || tag === "A" || tag === "INPUT")) return;
@@ -262,6 +302,7 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
       else if (e.key === "ArrowLeft") nudge(-5);
       else if (e.key === "m") toggleMute();
       else if (e.key === "f") toggleFull();
+      else if (e.key === "c") toggleCc();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -362,8 +403,8 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
         transition={spring}
       >
         <motion.div
-          className={`absolute overflow-hidden rounded-[10px] bg-black ${!showUi && isPlaying ? "cursor-none" : ""}`}
-          style={{ inset: BEZEL }}
+          className={`overflow-hidden bg-black ${pseudo ? "fixed" : "absolute rounded-[10px]"} ${!showUi && isPlaying ? "cursor-none" : ""}`}
+          style={pseudo ? { inset: 0, zIndex: 200 } : { inset: BEZEL }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
@@ -390,6 +431,17 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
             onDoubleClick={toggleFull}
             className="absolute inset-0 z-10 cursor-pointer"
           />
+
+          {/* Phones start muted so autoplay is allowed; one tap turns the sound on */}
+          {autoMuted && isPlaying && (
+            <button
+              type="button"
+              onClick={toggleMute}
+              className="absolute bottom-20 left-3 z-40 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-xs font-semibold text-white ring-1 ring-white/25 backdrop-blur"
+            >
+              <VolumeX size={16} /> Tap for sound
+            </button>
+          )}
 
           {/* Buffering */}
           <AnimatePresence>
@@ -500,15 +552,24 @@ export default function TrailerPlayer({ trailer, title, titleId, backdrop, still
                   style={{ "--p": `${muted ? 0 : vol}%` }}
                   onChange={(e) => changeVolume(Number(e.target.value))}
                 />
-                {document.fullscreenEnabled && (
+                {ccAvail && (
                   <button
-                    onClick={toggleFull}
-                    aria-label={full ? "Exit fullscreen" : "Fullscreen"}
-                    className="grid size-10 place-items-center rounded-full transition hover:bg-white/15"
+                    onClick={toggleCc}
+                    aria-label={ccOn ? "Turn captions off" : "Turn captions on"}
+                    aria-pressed={ccOn}
+                    title="Captions (c)"
+                    className={`grid size-10 place-items-center rounded-full transition ${ccOn ? "bg-white text-ink" : "hover:bg-white/15"}`}
                   >
-                    {full ? <Minimize size={20} /> : <Maximize size={20} />}
+                    <Captions size={20} />
                   </button>
                 )}
+                <button
+                  onClick={toggleFull}
+                  aria-label={full ? "Exit fullscreen" : "Fullscreen"}
+                  className="grid size-10 place-items-center rounded-full transition hover:bg-white/15"
+                >
+                  {full ? <Minimize size={20} /> : <Maximize size={20} />}
+                </button>
               </div>
             </div>
           </div>

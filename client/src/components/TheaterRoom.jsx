@@ -74,6 +74,63 @@ function Speaker({ width = 64, height, rim, facing = "right" }) {
   );
 }
 
+/**
+ * A compact wall-mounted speaker, toed in so its face points across the room toward your seat.
+ * `side` is the wall corner it hangs in; `rim` is the room's light colour catching its inner edge.
+ */
+function WallSpeaker({ w, h, rim, side = "L" }) {
+  const left = side === "L";
+  const tw = Math.round(w * 0.3);
+  const ww = Math.round(w * 0.62);
+  const ring = "0 0 0 2px #0b090d, 0 0 0 3px rgba(255,255,255,0.08)";
+  return (
+    <div style={{ width: w, height: h, perspective: 260 }}>
+      {/* soft shadow on the wall */}
+      <div className="absolute inset-0 translate-y-1.5 rounded-lg bg-black/70 blur-md" />
+      <div
+        className="relative size-full"
+        style={{ transform: `rotateY(${left ? -34 : 34}deg) rotateX(-8deg)`, transformStyle: "preserve-3d" }}
+      >
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[7px] border border-white/10"
+          style={{
+            background: "linear-gradient(160deg, #2a242b 0%, #141015 55%, #0a080b 100%)",
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.14), inset ${left ? "-" : ""}6px 0 12px -8px ${rim}, 0 6px 14px rgba(0,0,0,0.6)`,
+            transition: "box-shadow 1.2s linear",
+          }}
+        >
+          <div className="flex flex-col items-center" style={{ paddingTop: h * 0.1, gap: h * 0.07 }}>
+            <div
+              style={{
+                width: tw,
+                height: tw,
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 38% 32%, #5d5764 0 12%, #1a171d 13% 55%, #08060a 56%)",
+                boxShadow: ring,
+              }}
+            />
+            <div
+              style={{
+                width: ww,
+                height: ww,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle at 40% 34%, #4d4853 0 8%, #1c181f 9% 26%, #0b090d 27% 58%, #25212a 59% 65%, #0a080c 66%)",
+                boxShadow: ring,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      {/* wall bracket */}
+      <div
+        className="absolute -z-10 h-1.5 rounded-sm bg-[#17131a] ring-1 ring-white/10"
+        style={{ width: w * 0.5, bottom: -3, [left ? "left" : "right"]: -2 }}
+      />
+    </div>
+  );
+}
+
 /** An armrest with a cupholder and a soft LED strip, as seen from your own seat. */
 function Armrest({ side, c }) {
   const right = side === "right";
@@ -135,8 +192,11 @@ export default function TheaterRoom({
   const fade = { duration: reduce ? 0.01 : 0.6 };
 
   // The front wall: a rectangle a little larger than the screen. Everything else recedes from it.
-  const fx0 = Math.max(6, L - Math.min(W * 0.05, 56));
-  const fx1 = Math.min(vp.w - 6, L + W + Math.min(W * 0.05, 56));
+  // On a phone the screen is almost as wide as the display, which would flatten the room into a box.
+  // Pull the front wall in so the ceiling, walls and floor visibly run back toward it.
+  const inset = narrow ? Math.round(vp.w * 0.1) : 6;
+  const fx0 = Math.max(inset, L - Math.min(W * 0.05, 56));
+  const fx1 = Math.min(vp.w - inset, L + W + Math.min(W * 0.05, 56));
   const fy0 = Math.max(6, T - Math.min(T * 0.7, H * 0.2));
   const fy1 = T + H + H * 0.09;
   const { w, h } = vp;
@@ -155,6 +215,12 @@ export default function TheaterRoom({
 
   const towers = centered && !narrow && fx0 >= 96;
   const corners = !centered && !narrow && spaceBelow > 110;
+  // On a phone the screen takes the full width, so the speakers stand on the floor below it instead
+  // (kept clear of the caption and the "Watch on" button above them; the front row of seats may cover their feet)
+  const phoneH = Math.round(Math.min(spaceBelow - 70, 150));
+  const wallH = Math.round(Math.min(64, T - fy0 - 6));
+  const wallW = Math.round(wallH * 0.66);
+  const phoneSpeakers = narrow && phoneH >= 64;
   const seats = centered ? spaceBelow >= 50 : !narrow && spaceBelow > 110;
   const seatW = centered ? 96 : 56;
   const seatCount = Math.ceil(w / (seatW + 8)) + 1;
@@ -237,7 +303,7 @@ export default function TheaterRoom({
             {[0.2, 0.4, 0.6, 0.8].map((u) => (
               <line key={u} x1={u * w} y1="0" x2={lerp(fx0, fx1, u)} y2={fy0} />
             ))}
-            {[0.4, 0.7].map((t) => (
+            {(narrow ? [0.25, 0.45, 0.62, 0.76, 0.88] : [0.4, 0.7]).map((t) => (
               <line key={t} x1={lerp(0, fx0, t)} y1={lerp(0, fy0, t)} x2={lerp(w, fx1, t)} y2={lerp(0, fy0, t)} />
             ))}
           </g>
@@ -328,6 +394,26 @@ export default function TheaterRoom({
             </div>
             <div className="absolute" style={{ left: fx1 + 14, top: fy1 + 8 - towerH }}>
               <Speaker height={towerH} rim={c1} facing="left" />
+            </div>
+          </>
+        )}
+        {narrow && wallH >= 28 && (
+          <>
+            <div className="absolute" style={{ left: fx0 + 6, top: fy0 + 2 }}>
+              <WallSpeaker w={wallW} h={wallH} rim={c1} side="L" />
+            </div>
+            <div className="absolute" style={{ left: fx1 - 6 - wallW, top: fy0 + 2 }}>
+              <WallSpeaker w={wallW} h={wallH} rim={c1} side="R" />
+            </div>
+          </>
+        )}
+        {phoneSpeakers && (
+          <>
+            <div className="absolute" style={{ left: 14, bottom: 22 }}>
+              <Speaker width={Math.round(phoneH * 0.36)} height={phoneH} rim={c1} facing="right" />
+            </div>
+            <div className="absolute" style={{ right: 14, bottom: 22 }}>
+              <Speaker width={Math.round(phoneH * 0.36)} height={phoneH} rim={c1} facing="left" />
             </div>
           </>
         )}

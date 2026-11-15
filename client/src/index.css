@@ -109,3 +109,9 @@ body::after {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* While a trailer plays and the mouse is still, hide the pointer everywhere (including over buttons) */
+body.ww-idle,
+body.ww-idle * {
+  cursor: none !important;
+}

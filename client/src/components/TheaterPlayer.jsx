@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ExternalLink,
   Loader2,
+  Captions,
   Maximize,
   Minimize,
   Pause,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAmbientTimeline, useDominantColors } from "../colors.js";
 import TheaterRoom, { BEZEL, ScreenGlass } from "./TheaterRoom.jsx";
-import { clock, useYouTubePlayer } from "./youtube.js";
+import { clock, useFullscreen, useIdleCursor, useYouTubePlayer } from "./youtube.js";
 
 const YouTubeMark = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -38,11 +39,12 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
   const reduce = useReducedMotion();
   const roomRef = useRef(null);
   const yt = useYouTubePlayer({ videoKey: trailer.key, title });
-  const { hostRef, started, pos, dur, muted, vol, error, isPlaying, ended, loading, ready } = yt;
+  const { hostRef, started, pos, dur, muted, vol, error, isPlaying, ended, loading, ready, autoMuted, ccAvail, ccOn } = yt;
+  const { full, pseudo, toggle: toggleFull, isFull, exit: exitFull } = useFullscreen(roomRef);
+  useIdleCursor(isPlaying);
 
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const [fit, setFit] = useState(false); // false = fill the wide screen, true = show the whole 16:9 picture
-  const [full, setFull] = useState(false);
   const [scrub, setScrub] = useState(null);
 
   // ---- geometry: a wide screen across the top, room below ----
@@ -77,15 +79,6 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
     };
   }, []);
 
-  useEffect(() => {
-    const on = () => setFull(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", on);
-    return () => document.removeEventListener("fullscreenchange", on);
-  }, []);
-  const toggleFull = () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else roomRef.current?.requestFullscreen?.();
-  };
 
   // ---- ambient light that follows the trailer ----
   const sets = useMemo(
@@ -103,7 +96,8 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
     const onKey = (e) => {
       const tag = e.target?.tagName;
       if (e.key === "Escape") {
-        if (!document.fullscreenElement) onClose();
+        if (isFull()) exitFull();
+        else onClose();
         return;
       }
       if ((e.key === " " || e.key === "Enter") && (tag === "BUTTON" || tag === "A" || tag === "INPUT")) return;
@@ -113,6 +107,7 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
       } else if (e.key === "ArrowRight") yt.nudge(5);
       else if (e.key === "ArrowLeft") yt.nudge(-5);
       else if (e.key === "m") yt.toggleMute();
+      else if (e.key === "c") yt.toggleCc();
       else if (e.key === "f") toggleFull();
     };
     window.addEventListener("keydown", onKey);
@@ -205,8 +200,8 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
         transition={spring}
       >
         <motion.div
-          className="absolute overflow-hidden rounded-[10px] bg-black"
-          style={{ inset: BEZEL }}
+          className={`overflow-hidden bg-black ${pseudo ? "fixed" : "absolute rounded-[10px]"}`}
+          style={pseudo ? { inset: 0, zIndex: 200 } : { inset: BEZEL }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
@@ -223,7 +218,11 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
           <div
             ref={hostRef}
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{ width: videoW, height: videoH }}
+            style={
+              pseudo
+                ? { width: "min(100vw, calc(100dvh * 16 / 9))", height: "min(100dvh, calc(100vw * 9 / 16))" }
+                : { width: videoW, height: videoH }
+            }
           />
           <ScreenGlass />
           <button
@@ -233,6 +232,28 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
             onDoubleClick={toggleFull}
             className="absolute inset-0 z-10 cursor-pointer"
           />
+
+
+          {/* Phones start muted so autoplay is allowed; one tap turns the sound on */}
+          {autoMuted && isPlaying && (
+            <button
+              type="button"
+              onClick={yt.toggleMute}
+              className="absolute bottom-16 left-3 z-40 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-xs font-semibold text-white ring-1 ring-white/25 backdrop-blur"
+            >
+              <VolumeX size={16} /> Tap for sound
+            </button>
+          )}
+          {pseudo && (
+            <button
+              type="button"
+              onClick={exitFull}
+              aria-label="Exit fullscreen"
+              className="absolute right-3 top-3 z-40 grid size-11 place-items-center rounded-full bg-black/60 text-white ring-1 ring-white/25 backdrop-blur"
+            >
+              <Minimize size={20} />
+            </button>
+          )}
 
           <AnimatePresence>
             {loading && (
@@ -377,15 +398,24 @@ export default function TheaterPlayer({ trailer, title, titleId, backdrop, still
               {fit ? "Fit" : "Fill"}
             </button>
           )}
-          {document.fullscreenEnabled && (
+          {ccAvail && (
             <button
-              onClick={toggleFull}
-              aria-label={full ? "Exit fullscreen" : "Fullscreen"}
-              className={iconBtn}
+              onClick={yt.toggleCc}
+              aria-label={ccOn ? "Turn captions off" : "Turn captions on"}
+              aria-pressed={ccOn}
+              title="Captions (c)"
+              className={`${iconBtn} ${ccOn ? "!bg-white !text-ink" : ""}`}
             >
-              {full ? <Minimize size={20} /> : <Maximize size={20} />}
+              <Captions size={20} />
             </button>
           )}
+          <button
+            onClick={toggleFull}
+            aria-label={full ? "Exit fullscreen" : "Fullscreen"}
+            className={iconBtn}
+          >
+            {full ? <Minimize size={20} /> : <Maximize size={20} />}
+          </button>
           <span className="flex-1" />
           {cta && (
             <a
